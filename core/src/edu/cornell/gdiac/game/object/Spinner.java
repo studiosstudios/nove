@@ -12,14 +12,17 @@
  * Based on original PhysicsDemo Lab by Don Holden, 2007
  * Updated asset version, 2/6/2021
  */
-package edu.cornell.gdiac.game.platform;
+package edu.cornell.gdiac.game.object;
 
-import com.badlogic.gdx.graphics.g2d.*;
-import com.badlogic.gdx.physics.box2d.*;
-import com.badlogic.gdx.physics.box2d.joints.*;
-
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.physics.box2d.BodyDef;
+import com.badlogic.gdx.physics.box2d.Joint;
+import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.physics.box2d.joints.RevoluteJointDef;
 import com.badlogic.gdx.utils.JsonValue;
-import edu.cornell.gdiac.game.obstacle.*;
+import edu.cornell.gdiac.game.obstacle.BoxObstacle;
+import edu.cornell.gdiac.game.obstacle.ComplexObstacle;
+import edu.cornell.gdiac.game.obstacle.WheelObstacle;
 
 public class Spinner extends ComplexObstacle {
 	/** The initializing data (to avoid magic numbers) */

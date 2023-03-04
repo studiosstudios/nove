@@ -12,14 +12,16 @@
  * Based on original PhysicsDemo Lab by Don Holden, 2007
  * Updated asset version, 2/6/2021
  */
-package edu.cornell.gdiac.game.platform;
+package edu.cornell.gdiac.game.object;
 
-import com.badlogic.gdx.math.*;
-import com.badlogic.gdx.graphics.g2d.*;
-import com.badlogic.gdx.physics.box2d.*;
-import com.badlogic.gdx.physics.box2d.joints.*;
-
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.BodyDef;
+import com.badlogic.gdx.physics.box2d.Joint;
+import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.physics.box2d.joints.RevoluteJointDef;
 import com.badlogic.gdx.utils.JsonValue;
+import edu.cornell.gdiac.game.obstacle.Obstacle;
 import edu.cornell.gdiac.game.obstacle.*;
 
 /**
@@ -156,7 +158,7 @@ public class RopeBridge extends ComplexObstacle {
 		}
 
 		// Create the rightmost anchor
-		Obstacle last = bodies.get(bodies.size-1);
+		edu.cornell.gdiac.game.obstacle.Obstacle last = bodies.get(bodies.size-1);
 
 		pos = last.getPosition();
 		pos.x += linksize / 2;
