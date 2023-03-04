@@ -21,12 +21,9 @@ import java.util.Iterator;
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.audio.*;
 import com.badlogic.gdx.math.*;
-import com.badlogic.gdx.utils.*;
-import com.badlogic.gdx.assets.*;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.*;
 import com.badlogic.gdx.physics.box2d.*;
-import com.badlogic.gdx.graphics.g2d.freetype.*;
 import edu.cornell.gdiac.assets.AssetDirectory;
 import edu.cornell.gdiac.util.*;
 import edu.cornell.gdiac.game.obstacle.*;
@@ -370,14 +367,6 @@ public abstract class WorldController implements Screen {
 			pause();
 			listener.exitScreen(this, EXIT_QUIT);
 			return false;
-		} else if (input.didAdvance()) {
-			pause();
-			listener.exitScreen(this, EXIT_NEXT);
-			return false;
-		} else if (input.didRetreat()) {
-			pause();
-			listener.exitScreen(this, EXIT_PREV);
-			return false;
 		} else if (countdown > 0) {
 			countdown--;
 		} else if (countdown == 0) {
@@ -385,7 +374,7 @@ public abstract class WorldController implements Screen {
 				reset();
 			} else if (complete) {
 				pause();
-				listener.exitScreen(this, EXIT_QUIT);
+				reset();
 				return false;
 			}
 		}
