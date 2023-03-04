@@ -51,12 +51,6 @@ public class InputController {
 	/** Whether the reset button was pressed. */
 	private boolean resetPressed;
 	private boolean resetPrevious;
-	/** Whether the button to advanced worlds was pressed. */
-	private boolean nextPressed;
-	private boolean nextPrevious;
-	/** Whether the button to step back worlds was pressed. */
-	private boolean prevPressed;
-	private boolean prevPrevious;
 	/** Whether the primary action button was pressed. */
 	private boolean primePressed;
 	private boolean primePrevious;
@@ -167,24 +161,6 @@ public class InputController {
 	public boolean didReset() {
 		return resetPressed && !resetPrevious;
 	}
-
-	/**
-	 * Returns true if the player wants to go to the next level.
-	 *
-	 * @return true if the player wants to go to the next level.
-	 */
-	public boolean didAdvance() {
-		return nextPressed && !nextPrevious;
-	}
-	
-	/**
-	 * Returns true if the player wants to go to the previous level.
-	 *
-	 * @return true if the player wants to go to the previous level.
-	 */
-	public boolean didRetreat() {
-		return prevPressed && !prevPrevious;
-	}
 	
 	/**
 	 * Returns true if the player wants to go toggle the debug mode.
@@ -240,8 +216,6 @@ public class InputController {
 		resetPrevious  = resetPressed;
 		debugPrevious  = debugPressed;
 		exitPrevious = exitPressed;
-		nextPrevious = nextPressed;
-		prevPrevious = prevPressed;
 		
 		// Check to see if a GamePad is connected
 		if (xbox != null && xbox.isConnected()) {
@@ -265,8 +239,6 @@ public class InputController {
 	private void readGamepad(Rectangle bounds, Vector2 scale) {
 		resetPressed = xbox.getStart();
 		exitPressed  = xbox.getBack();
-		nextPressed  = xbox.getRBumper();
-		prevPressed  = xbox.getLBumper();
 		primePressed = xbox.getA();
 		debugPressed  = xbox.getY();
 
@@ -305,8 +277,6 @@ public class InputController {
 		debugPressed = (secondary && debugPressed) || (Gdx.input.isKeyPressed(Input.Keys.D));
 		primePressed = (secondary && primePressed) || (Gdx.input.isKeyPressed(Input.Keys.UP));
 		secondPressed = (secondary && secondPressed) || (Gdx.input.isKeyPressed(Input.Keys.SPACE));
-		prevPressed = (secondary && prevPressed) || (Gdx.input.isKeyPressed(Input.Keys.P));
-		nextPressed = (secondary && nextPressed) || (Gdx.input.isKeyPressed(Input.Keys.N));
 		exitPressed  = (secondary && exitPressed) || (Gdx.input.isKeyPressed(Input.Keys.ESCAPE));
 		
 		// Directional controls
