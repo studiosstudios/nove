@@ -16,7 +16,6 @@
 import com.badlogic.gdx.*;
 import edu.cornell.gdiac.util.*;
 import edu.cornell.gdiac.assets.*;
-import edu.cornell.gdiac.game.platform.*;
 
 /**
  * Root class for a LibGDX.  
@@ -58,7 +57,7 @@ public class GDXRoot extends Game implements ScreenListener {
 		loading = new LoadingMode("assets.json",canvas,1);
 
 		// Initialize the three game worlds
-		controller = new PlatformController();
+		controller = new LevelController();
 		current = 0;
 		loading.setScreenListener(this);
 		setScreen(loading);
