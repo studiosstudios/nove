@@ -37,6 +37,7 @@ public class DudeModel extends CapsuleObstacle {
 	/** Identifier to allow us to track the sensor in ContactListener */
 	private final String sensorName;
 	/** The impulse for the character jump */
+	private final float dash_force;
 	private final float jump_force;
 	/** Cooldown (in animation frames) for jumping */
 	private final int jumpLimit;
@@ -55,6 +56,9 @@ public class DudeModel extends CapsuleObstacle {
 	private int shootCooldown;
 	/** Whether our feet are on the ground */
 	private boolean isGrounded;
+	/** Whether we are actively dashing */
+	private boolean isDashing;
+	public boolean canDash;
 	/** Whether we are actively shooting */
 	private boolean isShooting;
 	/** The physics shape of this object */
@@ -109,7 +113,12 @@ public class DudeModel extends CapsuleObstacle {
 	public void setShooting(boolean value) {
 		isShooting = value;
 	}
-
+	public void setDashing(boolean value){
+		isDashing = value;
+	}
+	public boolean isDashing(){
+		return isDashing;
+	}
 	/**
 	 * Returns true if the dude is actively jumping.
 	 *
@@ -144,6 +153,9 @@ public class DudeModel extends CapsuleObstacle {
 	 */
 	public void setGrounded(boolean value) {
 		isGrounded = value;
+		if(isGrounded){
+			canDash = true;
+		}
 	}
 
 	/**
@@ -222,6 +234,7 @@ public class DudeModel extends CapsuleObstacle {
 		damping = data.getFloat("damping", 0);
 		force = data.getFloat("force", 0);
 		jump_force = data.getFloat( "jump_force", 0 );
+		dash_force = data.getFloat( "dash_force", 0 );;
 		jumpLimit = data.getInt( "jump_cool", 0 );
 		shotLimit = data.getInt( "shot_cool", 0 );
 		sensorName = "DudeGroundSensor";
@@ -229,9 +242,11 @@ public class DudeModel extends CapsuleObstacle {
 
 		// Gameplay attributes
 		isGrounded = false;
+		isDashing = false;
 		isShooting = false;
 		isJumping = false;
 		faceRight = true;
+		canDash = true;
 
 		shootCooldown = 0;
 		jumpCooldown = 0;
@@ -302,7 +317,19 @@ public class DudeModel extends CapsuleObstacle {
 			forceCache.set(getMovement(),0);
 			body.applyForce(forceCache,getPosition(),true);
 		}
-
+		if (isDashing() && canDash){
+			if(movement > 0){
+				forceCache.set(dash_force,dash_force);
+			}
+			else if(movement < 0){
+				forceCache.set(-dash_force,dash_force);
+			}
+			else{
+				forceCache.set(0,dash_force);
+			}
+			body.applyLinearImpulse(forceCache,getPosition(),true);
+			canDash = false;
+		}
 		// Jump!
 		if (isJumping()) {
 			forceCache.set(0, jump_force);
@@ -330,7 +357,6 @@ public class DudeModel extends CapsuleObstacle {
 		} else {
 			shootCooldown = Math.max(0, shootCooldown - 1);
 		}
-
 		super.update(dt);
 	}
 

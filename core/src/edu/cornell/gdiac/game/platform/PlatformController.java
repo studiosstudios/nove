@@ -244,18 +244,22 @@ public class PlatformController extends WorldController implements ContactListen
 		avatar.setMovement(InputController.getInstance().getHorizontal() *avatar.getForce());
 		avatar.setJumping(InputController.getInstance().didPrimary());
 		avatar.setShooting(InputController.getInstance().didSecondary());
-
+		avatar.setDashing(InputController.getInstance().didDash());
 		// Add a bullet if we fire
 		if (avatar.isShooting()) {
 			createBullet();
 		}
-
+		if (avatar.isDashing()) {
+			dash();
+		}
 		avatar.applyForce();
 		if (avatar.isJumping()) {
 			jumpId = playSound( jumpSound, jumpId, volume );
 		}
 	}
-
+	private void dash(){
+		avatar.getPosition();
+	}
 	/**
 	 * Add a new bullet to the world and send it in the right direction.
 	 */
