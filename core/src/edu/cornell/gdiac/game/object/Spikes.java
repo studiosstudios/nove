@@ -20,7 +20,10 @@ public class Spikes extends BoxObstacle {
     private final JsonValue data;
 
     public Spikes(float x, float y, float angle, TextureRegion texture, Vector2 scale, JsonValue data){
-        super(x, y, texture.getRegionWidth()/scale.x, texture.getRegionHeight()/scale.y);
+        super( x+data.get("offset").getFloat(0),
+                y+data.get("offset").getFloat(1),
+                texture.getRegionWidth()/scale.x,
+                texture.getRegionHeight()/scale.y);
         assert angle % 90 == 0;
         this.data = data;
         setAngle((float) (angle * Math.PI/180));
