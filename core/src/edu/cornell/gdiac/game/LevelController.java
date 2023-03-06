@@ -20,6 +20,13 @@ import edu.cornell.gdiac.game.object.*;
 
 import edu.cornell.gdiac.assets.AssetDirectory;
 import edu.cornell.gdiac.game.obstacle.*;
+import edu.cornell.gdiac.util.PooledList;
+import edu.cornell.gdiac.util.ScreenListener;
+
+import java.util.HashMap;
+import java.util.Iterator;
+
+import static edu.cornell.gdiac.game.WorldController.EXIT_QUIT;
 
 /**
  * Gameplay specific controller for the platformer game.  
@@ -30,31 +37,13 @@ import edu.cornell.gdiac.game.obstacle.*;
  * This is the purpose of our AssetState variable; it ensures that multiple instances
  * place nicely with the static assets.
  */
-public class LevelController extends WorldController implements ContactListener {
-    /** Texture asset for character avatar */
-    private TextureRegion avatarTexture;
-    /** Texture asset for the spinning barrier */
-    private TextureRegion barrierTexture;
-    /** Texture asset for the bullet */
-    private TextureRegion bulletTexture;
-    /** Texture asset for the bridge plank */
-    private TextureRegion bridgeTexture;
-
-    /** The jump sound.  We only want to play once. */
-    private Sound jumpSound;
-    private long jumpId = -1;
-    /** The weapon fire sound.  We only want to play once. */
-    private Sound fireSound;
-    private long fireId = -1;
-    /** The weapon pop sound.  We only want to play once. */
-    private Sound plopSound;
-    private long plopId = -1;
+public class LevelController implements ContactListener {
     /** The default sound volume */
     private float volume;
 
-    // Physics objects for the game
-    /** Physics constants for initialization */
-    private JsonValue constants;
+    private long jumpId = -1;
+    private long plopId = -1;
+	private long fireId = -1;
     /** Reference to the character avatar */
     private Cat avatar;
     /** Reference to the goalDoor (for collision detection) */
@@ -63,40 +52,88 @@ public class LevelController extends WorldController implements ContactListener 
     /** Mark set to handle more sophisticated collision callbacks */
     protected ObjectSet<Fixture> sensorFixtures;
 
+    /** The amount of time for a physics engine step. */
+    public static final float WORLD_STEP = 1/60.0f;
+    /** Number of velocity iterations for the constrain solvers */
+    public static final int WORLD_VELOC = 6;
+    /** Number of position iterations for the constrain solvers */
+    public static final int WORLD_POSIT = 2;
+
+    /** Width of the game world in Box2d units */
+    protected static final float DEFAULT_WIDTH  = 32.0f;
+    /** Height of the game world in Box2d units */
+    protected static final float DEFAULT_HEIGHT = 18.0f;
+    /** The default value of gravity (going down) */
+    protected static final float DEFAULT_GRAVITY = -4.9f;
+
+    /** Reference to the game canvas */
+    protected GameCanvas canvas;
+    /** All the objects in the world. */
+    protected PooledList<Obstacle> objects  = new PooledList<Obstacle>();
+    /** Queue for adding objects */
+    protected PooledList<Obstacle> addQueue = new PooledList<Obstacle>();
+
+    /** The Box2D world */
+    protected World world;
+    /** The boundary of the world */
+    protected Rectangle bounds;
+    /** The world scale */
+    protected Vector2 scale;
+    /** Whether we have completed this level */
+    private boolean complete;
+    /** Whether we have failed at this world (and need a reset) */
+    private boolean failed;
+    /** Countdown active for winning or losing */
+    private int countdown;
+    /** Exit code for advancing to next level */
+    public static final int EXIT_COUNT = 120;
+    /** Whether or not debug mode is active */
+    private boolean debug;
+
+    /** texture region map */
+    private HashMap<String, TextureRegion> textureRegionAssetMap;
+    /** sound map */
+    private HashMap<String, Sound> soundAssetMap;
+    /** font map */
+    private HashMap<String, BitmapFont> fontAssetMap;
+    /** constants */
+    private JsonValue JSONconstants;
+
+    /**
+     * Returns true if debug mode is active.
+     *
+     * If true, all objects will display their physics bodies.
+     *
+     * @return true if debug mode is active.
+     */
+    public boolean isDebug( ) {
+        return debug;
+    }
+
+    public int getCountdown() {
+        return countdown;
+    }
+
+    public void setCountdown(int countdown){
+        this.countdown = countdown;
+    }
+
     /**
      * Creates and initialize a new instance of the platformer game
      *
      * The game has default gravity and other settings
      */
-    public LevelController() {
-        super(DEFAULT_WIDTH,DEFAULT_HEIGHT,DEFAULT_GRAVITY);
-        setDebug(false);
-        setComplete(false);
-        setFailure(false);
+    public LevelController(Rectangle bounds, Vector2 gravity) {
+        world = new World(gravity,false);
+
+        complete = false;
+        failed = false;
+        countdown = -1;
+        this.bounds = new Rectangle(bounds);
+        this.scale = new Vector2(1,1);
+        debug  = false;
         world.setContactListener(this);
         sensorFixtures = new ObjectSet<Fixture>();
-    }
-
-    /**
-     * Gather the assets for this controller.
-     *
-     * This method extracts the asset variables from the given asset directory. It
-     * should only be called after the asset directory is completed.
-     *
-     * @param directory	Reference to global asset manager.
-     */
-    public void gatherAssets(AssetDirectory directory) {
-        avatarTexture  = new TextureRegion(directory.getEntry("platform:dude",Texture.class));
-        barrierTexture = new TextureRegion(directory.getEntry("platform:barrier",Texture.class));
-        bulletTexture = new TextureRegion(directory.getEntry("platform:bullet",Texture.class));
-        bridgeTexture = new TextureRegion(directory.getEntry("platform:rope",Texture.class));
-
-        jumpSound = directory.getEntry( "platform:jump", Sound.class );
-        fireSound = directory.getEntry( "platform:pew", Sound.class );
-        plopSound = directory.getEntry( "platform:plop", Sound.class );
-
-        constants = directory.getEntry( "platform:constants", JsonValue.class );
-        super.gatherAssets(directory);
     }
 
     /**
@@ -121,15 +158,23 @@ public class LevelController extends WorldController implements ContactListener 
         populateLevel();
     }
 
+    public void setAssets(HashMap<String, TextureRegion> tMap, HashMap<String, BitmapFont> fMap,
+                            HashMap<String, Sound> sMap, JsonValue constants){
+        textureRegionAssetMap = tMap;
+        fontAssetMap = fMap;
+        soundAssetMap = sMap;
+        JSONconstants = constants;
+    }
+
     /**
      * Lays out the game geography.
      */
     private void populateLevel() {
         // Add level goal
-        float dwidth  = goalTile.getRegionWidth()/scale.x;
-        float dheight = goalTile.getRegionHeight()/scale.y;
+        float dwidth  = textureRegionAssetMap.get("goalTile").getRegionWidth()/scale.x;
+        float dheight = textureRegionAssetMap.get("goalTile").getRegionHeight()/scale.y;
 
-        JsonValue goal = constants.get("goal");
+        JsonValue goal = JSONconstants.get("goal");
         JsonValue goalpos = goal.get("pos");
         goalDoor = new BoxObstacle(goalpos.getFloat(0),goalpos.getFloat(1),dwidth,dheight);
         goalDoor.setBodyType(BodyDef.BodyType.StaticBody);
@@ -138,13 +183,13 @@ public class LevelController extends WorldController implements ContactListener 
         goalDoor.setRestitution(goal.getFloat("restitution", 0));
         goalDoor.setSensor(true);
         goalDoor.setDrawScale(scale);
-        goalDoor.setTexture(goalTile);
+        goalDoor.setTexture(textureRegionAssetMap.get("goalTile"));
         goalDoor.setName("goal");
         addObject(goalDoor);
 
         String wname = "wall";
-        JsonValue walljv = constants.get("walls");
-        JsonValue defaults = constants.get("defaults");
+        JsonValue walljv = JSONconstants.get("walls");
+        JsonValue defaults = JSONconstants.get("defaults");
         for (int ii = 0; ii < walljv.size; ii++) {
             PolygonObstacle obj;
             obj = new PolygonObstacle(walljv.get(ii).asFloatArray(), 0, 0);
@@ -153,13 +198,13 @@ public class LevelController extends WorldController implements ContactListener 
             obj.setFriction(defaults.getFloat( "friction", 0.0f ));
             obj.setRestitution(defaults.getFloat( "restitution", 0.0f ));
             obj.setDrawScale(scale);
-            obj.setTexture(earthTile);
+            obj.setTexture(textureRegionAssetMap.get("earthTile"));
             obj.setName(wname+ii);
             addObject(obj);
         }
 
         String pname = "platform";
-        JsonValue platjv = constants.get("platforms");
+        JsonValue platjv = JSONconstants.get("platforms");
         for (int ii = 0; ii < platjv.size; ii++) {
             PolygonObstacle obj;
             obj = new PolygonObstacle(platjv.get(ii).asFloatArray(), 0, 0);
@@ -168,7 +213,7 @@ public class LevelController extends WorldController implements ContactListener 
             obj.setFriction(defaults.getFloat( "friction", 0.0f ));
             obj.setRestitution(defaults.getFloat( "restitution", 0.0f ));
             obj.setDrawScale(scale);
-            obj.setTexture(earthTile);
+            obj.setTexture(textureRegionAssetMap.get("earthTile"));
             obj.setName(pname+ii);
             addObject(obj);
         }
@@ -177,54 +222,45 @@ public class LevelController extends WorldController implements ContactListener 
         world.setGravity( new Vector2(0,defaults.getFloat("gravity",0)) );
 
         // Create dude
-        dwidth  = avatarTexture.getRegionWidth()/scale.x;
-        dheight = avatarTexture.getRegionHeight()/scale.y;
-        avatar = new Cat(constants.get("dude"), dwidth, dheight);
+        dwidth  = textureRegionAssetMap.get("cat").getRegionWidth()/scale.x;
+        dheight = textureRegionAssetMap.get("cat").getRegionHeight()/scale.y;
+        avatar = new Cat(JSONconstants.get("dude"), dwidth, dheight);
         avatar.setDrawScale(scale);
-        avatar.setTexture(avatarTexture);
+        avatar.setTexture(textureRegionAssetMap.get("cat"));
         addObject(avatar);
 
         // Create rope bridge
-        dwidth  = bridgeTexture.getRegionWidth()/scale.x;
-        dheight = bridgeTexture.getRegionHeight()/scale.y;
-        RopeBridge bridge = new RopeBridge(constants.get("bridge"), dwidth, dheight);
-        bridge.setTexture(bridgeTexture);
+        dwidth  = textureRegionAssetMap.get("rope").getRegionWidth()/scale.x;
+        dheight = textureRegionAssetMap.get("rope").getRegionHeight()/scale.y;
+        RopeBridge bridge = new RopeBridge(JSONconstants.get("bridge"), dwidth, dheight);
+        bridge.setTexture(textureRegionAssetMap.get("rope"));
         bridge.setDrawScale(scale);
         addObject(bridge);
 
         // Create spinning platform
-        dwidth  = barrierTexture.getRegionWidth()/scale.x;
-        dheight = barrierTexture.getRegionHeight()/scale.y;
-        Spinner spinPlatform = new Spinner(constants.get("spinner"),dwidth,dheight);
+        dwidth  = textureRegionAssetMap.get("barrier").getRegionWidth()/scale.x;
+        dheight = textureRegionAssetMap.get("barrier").getRegionHeight()/scale.y;
+        Spinner spinPlatform = new Spinner(JSONconstants.get("spinner"),dwidth,dheight);
         spinPlatform.setDrawScale(scale);
-        spinPlatform.setTexture(barrierTexture);
+        spinPlatform.setTexture(textureRegionAssetMap.get("barrier"));
         addObject(spinPlatform);
 
-        volume = constants.getFloat("volume", 1.0f);
+        volume = JSONconstants.getFloat("volume", 1.0f);
     }
 
     /**
-     * Returns whether to process the update loop
-     *
-     * At the start of the update loop, we check if it is time
-     * to switch to a new game mode.  If not, the update proceeds
-     * normally.
+     * Returns whether the player has lost
      *
      * @param dt	Number of seconds since last animation frame
      *
-     * @return whether to process the update loop
+     * @return whether the player has lost
      */
-    public boolean preUpdate(float dt) {
-        if (!super.preUpdate(dt)) {
-            return false;
-        }
-
+    public boolean checkFailure(float dt) {
         if (!isFailure() && avatar.getY() < -1) {
             setFailure(true);
-            return false;
+            return true;
         }
-
-        return true;
+        return false;
     }
 
     /**
@@ -250,7 +286,7 @@ public class LevelController extends WorldController implements ContactListener 
 
         avatar.applyForce();
         if (avatar.isJumping()) {
-            jumpId = playSound( jumpSound, jumpId, volume );
+            jumpId = playSound( soundAssetMap.get("jump"), jumpId, volume );
         }
     }
 
@@ -258,16 +294,16 @@ public class LevelController extends WorldController implements ContactListener 
      * Add a new bullet to the world and send it in the right direction.
      */
     private void createBullet() {
-        JsonValue bulletjv = constants.get("bullet");
+        JsonValue bulletjv = JSONconstants.get("bullet");
         float offset = bulletjv.getFloat("offset",0);
         offset *= (avatar.isFacingRight() ? 1 : -1);
-        float radius = bulletTexture.getRegionWidth()/(2.0f*scale.x);
+        float radius = textureRegionAssetMap.get("bullet").getRegionWidth()/(2.0f*scale.x);
         WheelObstacle bullet = new WheelObstacle(avatar.getX()+offset, avatar.getY(), radius);
 
         bullet.setName("bullet");
         bullet.setDensity(bulletjv.getFloat("density", 0));
         bullet.setDrawScale(scale);
-        bullet.setTexture(bulletTexture);
+        bullet.setTexture(textureRegionAssetMap.get("bullet"));
         bullet.setBullet(true);
         bullet.setGravityScale(0);
 
@@ -277,7 +313,7 @@ public class LevelController extends WorldController implements ContactListener 
         bullet.setVX(speed);
         addQueuedObject(bullet);
 
-        fireId = playSound( fireSound, fireId );
+        fireId = playSound( soundAssetMap.get("pew"), fireId );
     }
 
     /**
@@ -287,7 +323,7 @@ public class LevelController extends WorldController implements ContactListener 
      */
     public void removeBullet(Obstacle bullet) {
         bullet.markRemoved(true);
-        plopId = playSound( plopSound, plopId );
+        plopId = playSound( soundAssetMap.get("plop"), plopId );
     }
 
 
@@ -382,8 +418,283 @@ public class LevelController extends WorldController implements ContactListener 
      * Pausing happens when we switch game modes.
      */
     public void pause() {
-        jumpSound.stop(jumpId);
-        plopSound.stop(plopId);
-        fireSound.stop(fireId);
+        soundAssetMap.get("jump").stop(jumpId);
+        soundAssetMap.get("plop").stop(plopId);
+        soundAssetMap.get("fire").stop(fireId);
     }
+
+    /**
+     * Draw the physics objects to the canvas
+     *
+     * For simple worlds, this method is enough by itself.  It will need
+     * to be overridden if the world needs fancy backgrounds or the like.
+     *
+     * The method draws all objects in the order that they were added.
+     *
+     * @param dt	Number of seconds since last animation frame
+     */
+    public void draw(float dt) {
+        canvas.clear();
+
+        canvas.begin();
+        for(Obstacle obj : objects) {
+            obj.draw(canvas);
+        }
+        canvas.end();
+
+        if (debug) {
+            canvas.beginDebug();
+            for(Obstacle obj : objects) {
+                obj.drawDebug(canvas);
+            }
+            canvas.endDebug();
+        }
+
+        // Final message
+        if (complete && !failed) {
+            fontAssetMap.get("retro").setColor(Color.YELLOW);
+            canvas.begin(); // DO NOT SCALE
+            canvas.drawTextCentered("VICTORY!", fontAssetMap.get("retro"), 0.0f);
+            canvas.end();
+        } else if (failed) {
+            fontAssetMap.get("retro").setColor(Color.RED);
+            canvas.begin(); // DO NOT SCALE
+            canvas.drawTextCentered("FAILURE!", fontAssetMap.get("retro"), 0.0f);
+            canvas.end();
+        }
+    }
+
+    /**
+     * Returns the canvas associated with this controller
+     *
+     * The canvas is shared across all controllers
+     *
+     * @return the canvas associated with this controller
+     */
+    public GameCanvas getCanvas() {
+        return canvas;
+    }
+
+    /**
+     * Sets the canvas associated with this controller
+     *
+     * The canvas is shared across all controllers.  Setting this value will compute
+     * the drawing scale from the canvas size.
+     *
+     * @param canvas the canvas associated with this controller
+     */
+    public void setCanvas(GameCanvas canvas) {
+        this.canvas = canvas;
+        this.scale.x = canvas.getWidth()/bounds.getWidth();
+        this.scale.y = canvas.getHeight()/bounds.getHeight();
+    }
+
+    /**
+     * Dispose of all (non-static) resources allocated to this mode.
+     */
+    public void dispose() {
+        for(Obstacle obj : objects) {
+            obj.deactivatePhysics(world);
+        }
+        objects.clear();
+        addQueue.clear();
+        world.dispose();
+        objects = null;
+        addQueue = null;
+        bounds = null;
+        scale  = null;
+        world  = null;
+        canvas = null;
+    }
+
+
+    /**
+     * Returns true if the level is completed.
+     *
+     * If true, the level will advance after a countdown
+     *
+     * @return true if the level is completed.
+     */
+    public boolean isComplete( ) {
+        return complete;
+    }
+
+    /**
+     * Sets whether the level is completed.
+     *
+     * If true, the level will advance after a countdown
+     *
+     * @param value whether the level is completed.
+     */
+    public void setComplete(boolean value) {
+        if (value) {
+            countdown = EXIT_COUNT;
+        }
+        complete = value;
+    }
+
+    /**
+     * Returns true if the level is failed.
+     *
+     * If true, the level will reset after a countdown
+     *
+     * @return true if the level is failed.
+     */
+    public boolean isFailure( ) {
+        return failed;
+    }
+
+    /**
+     * Sets whether the level is failed.
+     *
+     * If true, the level will reset after a countdown
+     *
+     * @param value whether the level is failed.
+     */
+    public void setFailure(boolean value) {
+        if (value) {
+            countdown = EXIT_COUNT;
+        }
+        failed = value;
+    }
+
+    /**
+     * @param dt
+     * @return whether to exit the screen
+     */
+    public boolean preUpdate(float dt){
+        InputController input = InputController.getInstance();
+        input.readInput(bounds, scale);
+
+        // Toggle debug
+        if (input.didDebug()) {
+            debug = !debug;
+        }
+
+        // Handle resets
+        if (input.didReset()) {
+            reset();
+        }
+
+        // Now it is time to maybe switch screens.
+        return input.didExit();
+    }
+
+    /**
+     * Processes physics
+     *
+     * Once the update phase is over, but before we draw, we are ready to handle
+     * physics.  The primary method is the step() method in world.  This implementation
+     * works for all applications and should not need to be overwritten.
+     *
+     * @param dt	Number of seconds since last animation frame
+     */
+    public void postUpdate(float dt) {
+        // Add any objects created by actions
+        while (!addQueue.isEmpty()) {
+            addObject(addQueue.poll());
+        }
+
+        // Turn the physics engine crank.
+        world.step(WORLD_STEP,WORLD_VELOC,WORLD_POSIT);
+
+        // Garbage collect the deleted objects.
+        // Note how we use the linked list nodes to delete O(1) in place.
+        // This is O(n) without copying.
+        Iterator<PooledList<Obstacle>.Entry> iterator = objects.entryIterator();
+        while (iterator.hasNext()) {
+            PooledList<Obstacle>.Entry entry = iterator.next();
+            Obstacle obj = entry.getValue();
+            if (obj.isRemoved()) {
+                obj.deactivatePhysics(world);
+                entry.remove();
+            } else {
+                // Note that update is called last!
+                obj.update(dt);
+            }
+        }
+    }
+
+    /**
+     * Immediately adds the object to the physics world
+     *
+     * param obj The object to add
+     */
+    protected void addObject(Obstacle obj) {
+        assert inBounds(obj) : "Object is not in bounds";
+        objects.add(obj);
+        obj.activatePhysics(world);
+    }
+
+    /**
+     * Returns true if the object is in bounds.
+     *
+     * This assertion is useful for debugging the physics.
+     *
+     * @param obj The object to check.
+     *
+     * @return true if the object is in bounds.
+     */
+    public boolean inBounds(Obstacle obj) {
+        boolean horiz = (bounds.x <= obj.getX() && obj.getX() <= bounds.x+bounds.width);
+        boolean vert  = (bounds.y <= obj.getY() && obj.getY() <= bounds.y+bounds.height);
+        return horiz && vert;
+    }
+
+    /**
+     *
+     * Adds a physics object in to the insertion queue.
+     *
+     * Objects on the queue are added just before collision processing.  We do this to
+     * control object creation.
+     *
+     * param obj The object to add
+     */
+    public void addQueuedObject(Obstacle obj) {
+        assert inBounds(obj) : "Object is not in bounds";
+        addQueue.add(obj);
+    }
+
+
+    /**
+     * Method to ensure that a sound asset is only played once.
+     *
+     * Every time you play a sound asset, it makes a new instance of that sound.
+     * If you play the sounds to close together, you will have overlapping copies.
+     * To prevent that, you must stop the sound before you play it again.  That
+     * is the purpose of this method.  It stops the current instance playing (if
+     * any) and then returns the id of the new instance for tracking.
+     *
+     * @param sound		The sound asset to play
+     * @param soundId	The previously playing sound instance
+     *
+     * @return the new sound instance for this asset.
+     */
+    public long playSound(Sound sound, long soundId) {
+        return playSound( sound, soundId, 1.0f );
+    }
+
+
+    /**
+     * Method to ensure that a sound asset is only played once.
+     *
+     * Every time you play a sound asset, it makes a new instance of that sound.
+     * If you play the sounds to close together, you will have overlapping copies.
+     * To prevent that, you must stop the sound before you play it again.  That
+     * is the purpose of this method.  It stops the current instance playing (if
+     * any) and then returns the id of the new instance for tracking.
+     *
+     * @param sound		The sound asset to play
+     * @param soundId	The previously playing sound instance
+     * @param volume	The sound volume
+     *
+     * @return the new sound instance for this asset.
+     */
+    public long playSound(Sound sound, long soundId, float volume) {
+        if (soundId != -1) {
+            sound.stop( soundId );
+        }
+        return sound.play(volume);
+    }
+
 }
