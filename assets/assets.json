@@ -15,14 +15,15 @@
         "platform:rope":  "platform/ropebridge.png",
         "platform:barrier": "platform/barrier.png",
         "platform:bullet":  "platform/bullet.png",
+        "platform:spikes": "platform/spikes.png"
     },
     "jsons"  : {
-        "platform:constants": "platform/constants.json",
+        "platform:constants": "platform/constants.json"
     },
     "sounds" : {
         "platform:jump" : "platform/jump.mp3",
         "platform:pew"  : "platform/pew.mp3",
-        "platform:plop" : "platform/plop.mp3",
+        "platform:plop" : "platform/plop.mp3"
     },
     "fonts": {
         "shared:retro": {

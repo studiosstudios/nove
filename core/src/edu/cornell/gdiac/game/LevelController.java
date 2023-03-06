@@ -37,6 +37,8 @@ public class LevelController extends WorldController implements ContactListener 
     private TextureRegion barrierTexture;
     /** Texture asset for the bullet */
     private TextureRegion bulletTexture;
+    /** Texture asset for the spikes */
+    private TextureRegion spikesTexture;
     /** Texture asset for the bridge plank */
     private TextureRegion bridgeTexture;
 
@@ -90,6 +92,7 @@ public class LevelController extends WorldController implements ContactListener 
         barrierTexture = new TextureRegion(directory.getEntry("platform:barrier",Texture.class));
         bulletTexture = new TextureRegion(directory.getEntry("platform:bullet",Texture.class));
         bridgeTexture = new TextureRegion(directory.getEntry("platform:rope",Texture.class));
+        spikesTexture = new TextureRegion(directory.getEntry("platform:spikes", Texture.class));
 
         jumpSound = directory.getEntry( "platform:jump", Sound.class );
         fireSound = directory.getEntry( "platform:pew", Sound.class );
@@ -201,6 +204,17 @@ public class LevelController extends WorldController implements ContactListener 
 //        spinPlatform.setTexture(barrierTexture);
 //        addObject(spinPlatform);
 
+
+        // Add spikes
+        JsonValue spikesPosJV = constants.get("spikes").get("pos");
+        JsonValue spikesAngleJV = constants.get("spikes").get("angle");
+        for (int ii = 0; ii < spikesPosJV.size; ii++) {
+            float x = spikesPosJV.get(ii).getFloat(0);
+            float y = spikesPosJV.get(ii).getFloat(1);
+            float angle = spikesAngleJV.getFloat(ii);
+            Spikes spikes = new Spikes(x, y, angle, spikesTexture, scale, constants.get("spikes").get("spike"));
+            addObject(spikes);
+        }
         volume = constants.getFloat("volume", 1.0f);
     }
 
@@ -240,9 +254,16 @@ public class LevelController extends WorldController implements ContactListener 
      */
     public void update(float dt) {
         // Process actions in object model
-        avatar.setMovement(InputController.getInstance().getHorizontal() *avatar.getForce());
-        avatar.setJumping(InputController.getInstance().didPrimary());
-        avatar.setShooting(InputController.getInstance().didSecondary());
+        if (isFailure()) {
+            //if dead, keep velocity until touching the ground
+            if (avatar.isGrounded()){
+                avatar.setMovement(0);
+            }
+        } else {
+            avatar.setMovement(InputController.getInstance().getHorizontal() * avatar.getForce());
+            avatar.setJumping(InputController.getInstance().didPrimary());
+            avatar.setShooting(InputController.getInstance().didSecondary());
+        }
 
         // Add a bullet if we fire
         if (avatar.isShooting()) {
@@ -336,6 +357,12 @@ public class LevelController extends WorldController implements ContactListener 
                     (bd1 == goalDoor && bd2 == avatar)) {
                 setComplete(true);
             }
+
+            // Check for death
+            if ((bd1 == avatar && fd2 == Spikes.getSensorName()) ||
+                    (bd2 == avatar && fd1 == Spikes.getSensorName())){
+                die();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -386,5 +413,15 @@ public class LevelController extends WorldController implements ContactListener 
         jumpSound.stop(jumpId);
         plopSound.stop(plopId);
         fireSound.stop(fireId);
+    }
+
+    /**
+     * Called when a player dies. Removes all input but keeps velocities.
+     * TODO: create and return body to be used in preSolve (for fixing to spikes)
+     */
+    private void die(){
+        avatar.setJumping(false);
+        avatar.setShooting(false);
+        setFailure(true);
     }
 }
