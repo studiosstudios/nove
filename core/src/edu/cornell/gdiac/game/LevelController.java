@@ -102,6 +102,8 @@ public class LevelController implements ContactListener {
     /** The JSON value constants */
     private JsonValue JSONconstants;
 
+    private ActionController actionController;
+
     /**
      * Returns the canvas associated with this controller
      *
@@ -237,6 +239,8 @@ public class LevelController implements ContactListener {
         debug  = false;
         world.setContactListener(this);
         sensorFixtures = new ObjectSet<Fixture>();
+
+        actionController = new ActionController();
     }
 
     /**
@@ -561,9 +565,10 @@ public class LevelController implements ContactListener {
      */
     public void update(float dt) {
         // Process actions in object model
-        avatar.setMovement(InputController.getInstance().getHorizontal() *avatar.getForce());
-        avatar.setJumping(InputController.getInstance().didPrimary());
-        avatar.setShooting(InputController.getInstance().didSecondary());
+        actionController.updateAvatar(dt, avatar);
+//        avatar.setMovement(InputController.getInstance().getHorizontal() * avatar.getForce());
+//        avatar.setJumping(InputController.getInstance().didPrimary());
+//        avatar.setShooting(InputController.getInstance().didSecondary());
 
         // Add a bullet if we fire
         if (avatar.isShooting()) {
