@@ -254,26 +254,24 @@ public class LevelController extends WorldController implements ContactListener 
      */
     public void update(float dt) {
         // Process actions in object model
-        if (isFailure()) {
-            //if dead, keep velocity until touching the ground
-            if (avatar.isGrounded()){
-                avatar.setMovement(0);
-            }
-        } else {
-            avatar.setMovement(InputController.getInstance().getHorizontal() * avatar.getForce());
-            avatar.setJumping(InputController.getInstance().didPrimary());
-            avatar.setShooting(InputController.getInstance().didSecondary());
-        }
-
+        avatar.setMovement(InputController.getInstance().getHorizontal() *avatar.getForce());
+        avatar.setJumping(InputController.getInstance().didPrimary());
+        avatar.setShooting(InputController.getInstance().didSecondary());
+        avatar.setDashing(InputController.getInstance().didDash());
         // Add a bullet if we fire
         if (avatar.isShooting()) {
             createBullet();
         }
-
+        if (avatar.isDashing()) {
+            dash();
+        }
         avatar.applyForce();
         if (avatar.isJumping()) {
             jumpId = playSound( jumpSound, jumpId, volume );
         }
+    }
+    private void dash(){
+        avatar.getPosition();
     }
 
     /**

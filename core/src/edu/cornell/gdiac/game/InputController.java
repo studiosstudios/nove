@@ -54,6 +54,9 @@ public class InputController {
 	/** Whether the primary action button was pressed. */
 	private boolean primePressed;
 	private boolean primePrevious;
+	/** Whether the dash button was pressed. */
+	private boolean dashPressed;
+	private boolean dashPrevious;
 	/** Whether the secondary action button was pressed. */
 	private boolean secondPressed;
 	private boolean secondPrevious;
@@ -128,7 +131,15 @@ public class InputController {
 	public boolean didPrimary() {
 		return primePressed && !primePrevious;
 	}
-
+	/**
+	 * Returns true if the dash button was pressed.
+	 *
+	 * This is a one-press button. It only returns true at the moment it was
+	 * pressed, and returns false at any frame afterwards.
+	 *
+	 * @return true if the dash button was pressed.
+	 */
+	public boolean didDash() { return dashPressed && !dashPrevious;}
 	/**
 	 * Returns true if the secondary action button was pressed.
 	 *
@@ -140,7 +151,6 @@ public class InputController {
 	public boolean didSecondary() {
 		return secondPressed && !secondPrevious;
 	}
-
 	/**
 	 * Returns true if the tertiary action button was pressed.
 	 *
@@ -212,6 +222,7 @@ public class InputController {
 		// Copy state from last animation frame
 		// Helps us ignore buttons that are held down
 		primePrevious  = primePressed;
+		dashPrevious = dashPressed;
 		secondPrevious = secondPressed;
 		resetPrevious  = resetPressed;
 		debugPrevious  = debugPressed;
@@ -274,9 +285,12 @@ public class InputController {
 	private void readKeyboard(Rectangle bounds, Vector2 scale, boolean secondary) {
 		// Give priority to gamepad results
 		resetPressed = (secondary && resetPressed) || (Gdx.input.isKeyPressed(Input.Keys.R));
-		debugPressed = (secondary && debugPressed) || (Gdx.input.isKeyPressed(Input.Keys.D));
+		debugPressed = (secondary && debugPressed) || (Gdx.input.isKeyPressed(Input.Keys.V));
 		primePressed = (secondary && primePressed) || (Gdx.input.isKeyPressed(Input.Keys.UP));
 		secondPressed = (secondary && secondPressed) || (Gdx.input.isKeyPressed(Input.Keys.SPACE));
+		dashPressed = (secondary && dashPressed)||(Gdx.input.isKeyPressed(Input.Keys.D));
+//		prevPressed = (secondary && prevPressed) || (Gdx.input.isKeyPressed(Input.Keys.P));
+//		nextPressed = (secondary && nextPressed) || (Gdx.input.isKeyPressed(Input.Keys.N));
 		exitPressed  = (secondary && exitPressed) || (Gdx.input.isKeyPressed(Input.Keys.ESCAPE));
 		
 		// Directional controls

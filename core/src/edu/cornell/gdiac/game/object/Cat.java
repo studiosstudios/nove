@@ -30,6 +30,10 @@ public class Cat extends CapsuleObstacle {
 
     /** The factor to multiply by the input */
     private final float force;
+    private final float dash_force;
+    /** Whether we are actively dashing */
+    private boolean isDashing;
+    public boolean canDash;
     /** The amount to slow the character down */
     private final float damping;
     /** The maximum character speed */
@@ -91,7 +95,12 @@ public class Cat extends CapsuleObstacle {
             faceRight = true;
         }
     }
-
+    public void setDashing(boolean value){
+        isDashing = value;
+    }
+    public boolean isDashing(){
+        return isDashing;
+    }
     /**
      * Returns true if the cat is actively firing.
      *
@@ -144,6 +153,9 @@ public class Cat extends CapsuleObstacle {
      */
     public void setGrounded(boolean value) {
         isGrounded = value;
+        if(isGrounded){
+            canDash = true;
+        }
     }
 
     /**
@@ -222,6 +234,7 @@ public class Cat extends CapsuleObstacle {
         damping = data.getFloat("damping", 0);
         force = data.getFloat("force", 0);
         jump_force = data.getFloat( "jump_force", 0 );
+        dash_force = data.getFloat( "dash_force", 0 );;
         jumpLimit = data.getInt( "jump_cool", 0 );
         shotLimit = data.getInt( "shot_cool", 0 );
         sensorName = "catGroundSensor";
@@ -230,8 +243,10 @@ public class Cat extends CapsuleObstacle {
         // Gameplay attributes
         isGrounded = false;
         isShooting = false;
+        isDashing = false;
         isJumping = false;
         faceRight = true;
+        canDash = true;
 
         shootCooldown = 0;
         jumpCooldown = 0;
@@ -302,7 +317,19 @@ public class Cat extends CapsuleObstacle {
             forceCache.set(getMovement(),0);
             body.applyForce(forceCache,getPosition(),true);
         }
-
+        if (isDashing() && canDash){
+            if(movement > 0){
+                forceCache.set(dash_force,dash_force);
+            }
+            else if(movement < 0){
+                forceCache.set(-dash_force,dash_force);
+            }
+            else{
+                forceCache.set(0,dash_force);
+            }
+            body.applyLinearImpulse(forceCache,getPosition(),true);
+            canDash = false;
+        }
         // Jump!
         if (isJumping()) {
             forceCache.set(0, jump_force);
