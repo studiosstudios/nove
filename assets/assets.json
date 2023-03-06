@@ -5,8 +5,13 @@
             "wrapU": "repeated",
             "wrapV": "repeated"
         },
+        "shared:steel" : {
+          "file":  "shared/steeltile.png",
+          "wrapU": "repeated",
+          "wrapV": "repeated"
+        },
         "shared:goal":   "shared/goaldoor.png",
-        "platform:dude":  "platform/dude.png",
+        "platform:cat":  "platform/cat.png",
         "platform:rope":  "platform/ropebridge.png",
         "platform:barrier": "platform/barrier.png",
         "platform:bullet":  "platform/bullet.png",

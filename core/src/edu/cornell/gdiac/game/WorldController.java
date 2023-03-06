@@ -43,8 +43,10 @@ import edu.cornell.gdiac.game.obstacle.*;
  * place nicely with the static assets.
  */
 public abstract class WorldController implements Screen {
+//	/** The texture for walls and platforms */
+//	protected TextureRegion earthTile;
 	/** The texture for walls and platforms */
-	protected TextureRegion earthTile;
+	protected TextureRegion steelTile;
 	/** The texture for the exit condition */
 	protected TextureRegion goalTile;
 	/** The font for giving messages to the player */
@@ -282,7 +284,7 @@ public abstract class WorldController implements Screen {
 	 */
 	public void gatherAssets(AssetDirectory directory) {
 		// Allocate the tiles
-		earthTile = new TextureRegion(directory.getEntry( "shared:earth", Texture.class ));
+		steelTile = new TextureRegion(directory.getEntry( "shared:steel", Texture.class ));
 		goalTile  = new TextureRegion(directory.getEntry( "shared:goal", Texture.class ));
 		displayFont = directory.getEntry( "shared:retro" ,BitmapFont.class);
 	}

@@ -1,5 +1,5 @@
 /*
- * DudeModel.java
+ * CatModel.java
  *
  * You SHOULD NOT need to modify this file.  However, you may learn valuable lessons
  * for the rest of the lab by looking at it.
@@ -67,7 +67,7 @@ public class Cat extends CapsuleObstacle {
     /**
      * Returns left/right movement of this character.
      *
-     * This is the result of input times dude force.
+     * This is the result of input times cat force.
      *
      * @return left/right movement of this character.
      */
@@ -78,7 +78,7 @@ public class Cat extends CapsuleObstacle {
     /**
      * Sets left/right movement of this character.
      *
-     * This is the result of input times dude force.
+     * This is the result of input times cat force.
      *
      * @param value left/right movement of this character.
      */
@@ -93,85 +93,85 @@ public class Cat extends CapsuleObstacle {
     }
 
     /**
-     * Returns true if the dude is actively firing.
+     * Returns true if the cat is actively firing.
      *
-     * @return true if the dude is actively firing.
+     * @return true if the cat is actively firing.
      */
     public boolean isShooting() {
         return isShooting && shootCooldown <= 0;
     }
 
     /**
-     * Sets whether the dude is actively firing.
+     * Sets whether the cat is actively firing.
      *
-     * @param value whether the dude is actively firing.
+     * @param value whether the cat is actively firing.
      */
     public void setShooting(boolean value) {
         isShooting = value;
     }
 
     /**
-     * Returns true if the dude is actively jumping.
+     * Returns true if the cat is actively jumping.
      *
-     * @return true if the dude is actively jumping.
+     * @return true if the cat is actively jumping.
      */
     public boolean isJumping() {
         return isJumping && isGrounded && jumpCooldown <= 0;
     }
 
     /**
-     * Sets whether the dude is actively jumping.
+     * Sets whether the cat is actively jumping.
      *
-     * @param value whether the dude is actively jumping.
+     * @param value whether the cat is actively jumping.
      */
     public void setJumping(boolean value) {
         isJumping = value;
     }
 
     /**
-     * Returns true if the dude is on the ground.
+     * Returns true if the cat is on the ground.
      *
-     * @return true if the dude is on the ground.
+     * @return true if the cat is on the ground.
      */
     public boolean isGrounded() {
         return isGrounded;
     }
 
     /**
-     * Sets whether the dude is on the ground.
+     * Sets whether the cat is on the ground.
      *
-     * @param value whether the dude is on the ground.
+     * @param value whether the cat is on the ground.
      */
     public void setGrounded(boolean value) {
         isGrounded = value;
     }
 
     /**
-     * Returns how much force to apply to get the dude moving
+     * Returns how much force to apply to get the cat moving
      *
      * Multiply this by the input to get the movement value.
      *
-     * @return how much force to apply to get the dude moving
+     * @return how much force to apply to get the cat moving
      */
     public float getForce() {
         return force;
     }
 
     /**
-     * Returns ow hard the brakes are applied to get a dude to stop moving
+     * Returns ow hard the brakes are applied to get a cat to stop moving
      *
-     * @return ow hard the brakes are applied to get a dude to stop moving
+     * @return ow hard the brakes are applied to get a cat to stop moving
      */
     public float getDamping() {
         return damping;
     }
 
     /**
-     * Returns the upper limit on dude left-right movement.
+     * Returns the upper limit on cat left-right movement.
      *
      * This does NOT apply to vertical movement.
      *
-     * @return the upper limit on dude left-right movement.
+     * @return the upper limit on cat left-right movement.
      */
     public float getMaxSpeed() {
         return maxspeed;
@@ -198,13 +198,13 @@ public class Cat extends CapsuleObstacle {
     }
 
     /**
-     * Creates a new dude avatar with the given physics data
+     * Creates a new cat avatar with the given physics data
      *
      * The size is expressed in physics units NOT pixels.  In order for
      * drawing to work properly, you MUST set the drawScale. The drawScale
      * converts the physics units to pixels.
      *
-     * @param data  	The physics constants for this dude
+     * @param data  	The physics constants for this cat
      * @param width		The object width in physics units
      * @param height	The object width in physics units
      */
@@ -224,7 +224,7 @@ public class Cat extends CapsuleObstacle {
         jump_force = data.getFloat( "jump_force", 0 );
         jumpLimit = data.getInt( "jump_cool", 0 );
         shotLimit = data.getInt( "shot_cool", 0 );
-        sensorName = "DudeGroundSensor";
+        sensorName = "catGroundSensor";
         this.data = data;
 
         // Gameplay attributes
@@ -235,7 +235,7 @@ public class Cat extends CapsuleObstacle {
 
         shootCooldown = 0;
         jumpCooldown = 0;
-        setName("dude");
+        setName("cat");
     }
 
     /**
@@ -255,10 +255,10 @@ public class Cat extends CapsuleObstacle {
 
         // Ground Sensor
         // -------------
-        // We only allow the dude to jump when he's on the ground.
+        // We only allow the cat to jump when he's on the ground.
         // Double jumping is not allowed.
         //
-        // To determine whether or not the dude is on the ground,
+        // To determine whether or not the cat is on the ground,
         // we create a thin sensor under his feet, which reports
         // collisions with the world but has no collision response.
         Vector2 sensorCenter = new Vector2(0, -getHeight() / 2);
@@ -280,7 +280,7 @@ public class Cat extends CapsuleObstacle {
 
 
     /**
-     * Applies the force to the body of this dude
+     * Applies the force to the body of this cat
      *
      * This method should be called after the force attribute is set.
      */

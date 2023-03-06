@@ -86,7 +86,7 @@ public class LevelController extends WorldController implements ContactListener 
      * @param directory	Reference to global asset manager.
      */
     public void gatherAssets(AssetDirectory directory) {
-        avatarTexture  = new TextureRegion(directory.getEntry("platform:dude",Texture.class));
+        avatarTexture  = new TextureRegion(directory.getEntry("platform:cat",Texture.class));
         barrierTexture = new TextureRegion(directory.getEntry("platform:barrier",Texture.class));
         bulletTexture = new TextureRegion(directory.getEntry("platform:bullet",Texture.class));
         bridgeTexture = new TextureRegion(directory.getEntry("platform:rope",Texture.class));
@@ -136,7 +136,7 @@ public class LevelController extends WorldController implements ContactListener 
         goalDoor.setDensity(goal.getFloat("density", 0));
         goalDoor.setFriction(goal.getFloat("friction", 0));
         goalDoor.setRestitution(goal.getFloat("restitution", 0));
-        goalDoor.setSensor(true);
+//        goalDoor.setSensor(true);
         goalDoor.setDrawScale(scale);
         goalDoor.setTexture(goalTile);
         goalDoor.setName("goal");
@@ -153,7 +153,7 @@ public class LevelController extends WorldController implements ContactListener 
             obj.setFriction(defaults.getFloat( "friction", 0.0f ));
             obj.setRestitution(defaults.getFloat( "restitution", 0.0f ));
             obj.setDrawScale(scale);
-            obj.setTexture(earthTile);
+            obj.setTexture(steelTile);
             obj.setName(wname+ii);
             addObject(obj);
         }
@@ -168,7 +168,8 @@ public class LevelController extends WorldController implements ContactListener 
             obj.setFriction(defaults.getFloat( "friction", 0.0f ));
             obj.setRestitution(defaults.getFloat( "restitution", 0.0f ));
             obj.setDrawScale(scale);
-            obj.setTexture(earthTile);
+            obj.setTexture(steelTile
+            );
             obj.setName(pname+ii);
             addObject(obj);
         }
@@ -179,26 +180,26 @@ public class LevelController extends WorldController implements ContactListener 
         // Create dude
         dwidth  = avatarTexture.getRegionWidth()/scale.x;
         dheight = avatarTexture.getRegionHeight()/scale.y;
-        avatar = new Cat(constants.get("dude"), dwidth, dheight);
+        avatar = new Cat(constants.get("cat"), dwidth, dheight);
         avatar.setDrawScale(scale);
         avatar.setTexture(avatarTexture);
         addObject(avatar);
 
         // Create rope bridge
-        dwidth  = bridgeTexture.getRegionWidth()/scale.x;
-        dheight = bridgeTexture.getRegionHeight()/scale.y;
-        RopeBridge bridge = new RopeBridge(constants.get("bridge"), dwidth, dheight);
-        bridge.setTexture(bridgeTexture);
-        bridge.setDrawScale(scale);
-        addObject(bridge);
+//        dwidth  = bridgeTexture.getRegionWidth()/scale.x;
+//        dheight = bridgeTexture.getRegionHeight()/scale.y;
+//        RopeBridge bridge = new RopeBridge(constants.get("bridge"), dwidth, dheight);
+//        bridge.setTexture(bridgeTexture);
+//        bridge.setDrawScale(scale);
+//        addObject(bridge);
 
         // Create spinning platform
-        dwidth  = barrierTexture.getRegionWidth()/scale.x;
-        dheight = barrierTexture.getRegionHeight()/scale.y;
-        Spinner spinPlatform = new Spinner(constants.get("spinner"),dwidth,dheight);
-        spinPlatform.setDrawScale(scale);
-        spinPlatform.setTexture(barrierTexture);
-        addObject(spinPlatform);
+//        dwidth  = barrierTexture.getRegionWidth()/scale.x;
+//        dheight = barrierTexture.getRegionHeight()/scale.y;
+//        Spinner spinPlatform = new Spinner(constants.get("spinner"),dwidth,dheight);
+//        spinPlatform.setDrawScale(scale);
+//        spinPlatform.setTexture(barrierTexture);
+//        addObject(spinPlatform);
 
         volume = constants.getFloat("volume", 1.0f);
     }
