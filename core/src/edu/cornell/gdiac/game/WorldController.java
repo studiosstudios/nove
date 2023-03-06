@@ -52,6 +52,26 @@ public class WorldController implements Screen {
 	protected static final float DEFAULT_HEIGHT = 18.0f;
 	/** The default value of gravity (going down) */
 	protected static final float DEFAULT_GRAVITY = -4.9f;
+
+	/** Exit code for quitting the game */
+	public static final int EXIT_QUIT = 0;
+	/** Exit code for advancing to next level */
+	public static final int EXIT_COUNT = 120;
+
+	/** Listener that will update the player mode when we are done */
+	private ScreenListener listener;
+
+	/** Level controller */
+	private LevelController levelController;
+
+	/** The hashmap for texture regions */
+	private HashMap<String, TextureRegion> textureRegionAssetMap;
+	/** The hashmap for sounds */
+	private HashMap<String, Sound> soundAssetMap;
+	/** The hashmap for fonts */
+	private HashMap<String, BitmapFont> fontAssetMap;
+	/** The JSON value constants */
+	private JsonValue constants;
 //
 //	/** The texture for walls and platforms */
 //	protected TextureRegion earthTile;
@@ -82,26 +102,6 @@ public class WorldController implements Screen {
 //
 //	/** Physics constants for initialization */
 //	private JsonValue constants;
-
-	/** texture region map */
-	private HashMap<String, TextureRegion> textureRegionAssetMap;
-	/** sound map */
-	private HashMap<String, Sound> soundAssetMap;
-	/** font map */
-	private HashMap<String, BitmapFont> fontAssetMap;
-	/** constants */
-	private JsonValue constants;
-	
-	/** Exit code for quitting the game */
-	public static final int EXIT_QUIT = 0;
-	/** Exit code for advancing to next level */
-	public static final int EXIT_COUNT = 120;
-
-	/** Level controller */
-	private LevelController levelController;
-
-	/** Listener that will update the player mode when we are done */
-	private ScreenListener listener;
 
 	/**
 	 * Returns the canvas associated with this controller
@@ -184,24 +184,11 @@ public class WorldController implements Screen {
 	 */
 	public void gatherAssets(AssetDirectory directory) {
 		// Allocate the tiles
+		// Creating the hashmaps
 		textureRegionAssetMap = new HashMap<String, TextureRegion>();
 		soundAssetMap = new HashMap<String, Sound>();
 		fontAssetMap = new HashMap<String, BitmapFont>();
-//		earthTile = new TextureRegion(directory.getEntry( "shared:earth", Texture.class ));
-//		goalTile  = new TextureRegion(directory.getEntry( "shared:goal", Texture.class ));
-//		displayFont = directory.getEntry( "shared:retro" ,BitmapFont.class);
-//		avatarTexture  = new TextureRegion(directory.getEntry("platform:dude",Texture.class));
-//		barrierTexture = new TextureRegion(directory.getEntry("platform:barrier",Texture.class));
-//		bulletTexture = new TextureRegion(directory.getEntry("platform:bullet",Texture.class));
-//		bridgeTexture = new TextureRegion(directory.getEntry("platform:rope",Texture.class));
-//
-//		jumpSound = directory.getEntry( "platform:jump", Sound.class );
-//		fireSound = directory.getEntry( "platform:pew", Sound.class );
-//		plopSound = directory.getEntry( "platform:plop", Sound.class );
-//
-//		constants = directory.getEntry( "platform:constants", JsonValue.class );
-
-
+		// Filling hashmaps and constants
 		textureRegionAssetMap.put("earthTile", new TextureRegion(directory.getEntry( "shared:earth", Texture.class )));
 		textureRegionAssetMap.put("goalTile", new TextureRegion(directory.getEntry( "shared:goal", Texture.class )));
 		fontAssetMap.put("retro", directory.getEntry( "shared:retro" ,BitmapFont.class));
@@ -215,7 +202,23 @@ public class WorldController implements Screen {
 		soundAssetMap.put("plop", directory.getEntry( "platform:plop", Sound.class ));
 
 		constants =  directory.getEntry( "platform:constants", JsonValue.class );
+
+		// Giving assets to levelController
 		levelController.setAssets(textureRegionAssetMap, fontAssetMap, soundAssetMap, constants);
+
+//		earthTile = new TextureRegion(directory.getEntry( "shared:earth", Texture.class ));
+//		goalTile  = new TextureRegion(directory.getEntry( "shared:goal", Texture.class ));
+//		displayFont = directory.getEntry( "shared:retro" ,BitmapFont.class);
+//		avatarTexture  = new TextureRegion(directory.getEntry("platform:dude",Texture.class));
+//		barrierTexture = new TextureRegion(directory.getEntry("platform:barrier",Texture.class));
+//		bulletTexture = new TextureRegion(directory.getEntry("platform:bullet",Texture.class));
+//		bridgeTexture = new TextureRegion(directory.getEntry("platform:rope",Texture.class));
+//
+//		jumpSound = directory.getEntry( "platform:jump", Sound.class );
+//		fireSound = directory.getEntry( "platform:pew", Sound.class );
+//		plopSound = directory.getEntry( "platform:plop", Sound.class );
+//
+//		constants = directory.getEntry( "platform:constants", JsonValue.class );
 	}
 	
 	/**
@@ -375,5 +378,4 @@ public class WorldController implements Screen {
 	public void reset() {
 		levelController.reset();
 	}
-
 }

@@ -38,26 +38,12 @@ import static edu.cornell.gdiac.game.WorldController.EXIT_QUIT;
  * place nicely with the static assets.
  */
 public class LevelController implements ContactListener {
-    /** The default sound volume */
-    private float volume;
-
-    private long jumpId = -1;
-    private long plopId = -1;
-	private long fireId = -1;
-    /** Reference to the character avatar */
-    private Cat avatar;
-    /** Reference to the goalDoor (for collision detection) */
-    private BoxObstacle goalDoor;
-
-    /** Mark set to handle more sophisticated collision callbacks */
-    protected ObjectSet<Fixture> sensorFixtures;
-
-    /** The amount of time for a physics engine step. */
-    public static final float WORLD_STEP = 1/60.0f;
-    /** Number of velocity iterations for the constrain solvers */
-    public static final int WORLD_VELOC = 6;
-    /** Number of position iterations for the constrain solvers */
-    public static final int WORLD_POSIT = 2;
+    /** The Box2D world */
+    protected World world;
+    /** The boundary of the world */
+    protected Rectangle bounds;
+    /** The world scale */
+    protected Vector2 scale;
 
     /** Width of the game world in Box2d units */
     protected static final float DEFAULT_WIDTH  = 32.0f;
@@ -66,6 +52,35 @@ public class LevelController implements ContactListener {
     /** The default value of gravity (going down) */
     protected static final float DEFAULT_GRAVITY = -4.9f;
 
+    /** The amount of time for a physics engine step. */
+    public static final float WORLD_STEP = 1/60.0f;
+    /** Number of velocity iterations for the constrain solvers */
+    public static final int WORLD_VELOC = 6;
+    /** Number of position iterations for the constrain solvers */
+    public static final int WORLD_POSIT = 2;
+    /** Exit code for advancing to next level */
+    public static final int EXIT_COUNT = 120;
+    /** Whether or not debug mode is active */
+    private boolean debug;
+    /** Whether we have completed this level */
+    private boolean complete;
+    /** Whether we have failed at this world (and need a reset) */
+    private boolean failed;
+    /** Countdown active for winning or losing */
+    private int countdown;
+
+    /** The default sound volume */
+    private float volume;
+    /** The jump sound */
+    private long jumpId = -1;
+    /** The plop sound */
+    private long plopId = -1;
+    /** The pew (fire) sound */
+	private long fireId = -1;
+
+    /** Mark set to handle more sophisticated collision callbacks */
+    protected ObjectSet<Fixture> sensorFixtures;
+
     /** Reference to the game canvas */
     protected GameCanvas canvas;
     /** All the objects in the world. */
@@ -73,31 +88,44 @@ public class LevelController implements ContactListener {
     /** Queue for adding objects */
     protected PooledList<Obstacle> addQueue = new PooledList<Obstacle>();
 
-    /** The Box2D world */
-    protected World world;
-    /** The boundary of the world */
-    protected Rectangle bounds;
-    /** The world scale */
-    protected Vector2 scale;
-    /** Whether we have completed this level */
-    private boolean complete;
-    /** Whether we have failed at this world (and need a reset) */
-    private boolean failed;
-    /** Countdown active for winning or losing */
-    private int countdown;
-    /** Exit code for advancing to next level */
-    public static final int EXIT_COUNT = 120;
-    /** Whether or not debug mode is active */
-    private boolean debug;
+    /** Reference to the character avatar */
+    private Cat avatar;
+    /** Reference to the goalDoor (for collision detection) */
+    private BoxObstacle goalDoor;
 
-    /** texture region map */
+    /** The hashmap for texture regions */
     private HashMap<String, TextureRegion> textureRegionAssetMap;
-    /** sound map */
+    /** The hashmap for sounds */
     private HashMap<String, Sound> soundAssetMap;
-    /** font map */
+    /** The hashmap for fonts */
     private HashMap<String, BitmapFont> fontAssetMap;
-    /** constants */
+    /** The JSON value constants */
     private JsonValue JSONconstants;
+
+    /**
+     * Returns the canvas associated with this controller
+     *
+     * The canvas is shared across all controllers
+     *
+     * @return the canvas associated with this controller
+     */
+    public GameCanvas getCanvas() {
+        return canvas;
+    }
+
+    /**
+     * Sets the canvas associated with this controller
+     *
+     * The canvas is shared across all controllers.  Setting this value will compute
+     * the drawing scale from the canvas size.
+     *
+     * @param canvas the canvas associated with this controller
+     */
+    public void setCanvas(GameCanvas canvas) {
+        this.canvas = canvas;
+        this.scale.x = canvas.getWidth()/bounds.getWidth();
+        this.scale.y = canvas.getHeight()/bounds.getHeight();
+    }
 
     /**
      * Returns true if debug mode is active.
@@ -110,12 +138,87 @@ public class LevelController implements ContactListener {
         return debug;
     }
 
+    /**
+     * Returns true if the level is failed.
+     *
+     * If true, the level will reset after a countdown
+     *
+     * @return true if the level is failed.
+     */
+    public boolean isFailure( ) {
+        return failed;
+    }
+
+    /**
+     * Sets whether the level is failed.
+     *
+     * If true, the level will reset after a countdown
+     *
+     * @param value whether the level is failed.
+     */
+    public void setFailure(boolean value) {
+        if (value) {
+            countdown = EXIT_COUNT;
+        }
+        failed = value;
+    }
+
+    /**
+     * Returns the countdown until game resets
+     *
+     * @return countdown
+     */
     public int getCountdown() {
         return countdown;
     }
 
+    /**
+     * Sets the countdown until game resets
+     *
+     * @param countdown the countdown until the game is reset
+     */
     public void setCountdown(int countdown){
         this.countdown = countdown;
+    }
+
+    /**
+     * Returns true if the level is completed.
+     *
+     * If true, the level will advance after a countdown
+     *
+     * @return true if the level is completed.
+     */
+    public boolean isComplete( ) {
+        return complete;
+    }
+
+    /**
+     * Sets whether the level is completed.
+     *
+     * If true, the level will advance after a countdown
+     *
+     * @param value whether the level is completed.
+     */
+    public void setComplete(boolean value) {
+        if (value) {
+            countdown = EXIT_COUNT;
+        }
+        complete = value;
+    }
+
+    /**
+     * Returns whether the player has lost
+     *
+     * @param dt Number of seconds since last animation frame
+     *
+     * @return whether the player has lost
+     */
+    public boolean checkFailure(float dt) {
+        if (!isFailure() && avatar.getY() < -1) {
+            setFailure(true);
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -158,12 +261,90 @@ public class LevelController implements ContactListener {
         populateLevel();
     }
 
+    /**
+     * Called when the Screen is paused.
+     *
+     * We need this method to stop all sounds when we pause.
+     * Pausing happens when we switch game modes.
+     */
+    public void pause() {
+        soundAssetMap.get("jump").stop(jumpId);
+        soundAssetMap.get("plop").stop(plopId);
+        soundAssetMap.get("fire").stop(fireId);
+    }
+
+    /**
+     * Dispose of all (non-static) resources allocated to this mode.
+     */
+    public void dispose() {
+        for(Obstacle obj : objects) {
+            obj.deactivatePhysics(world);
+        }
+        objects.clear();
+        addQueue.clear();
+        world.dispose();
+        objects = null;
+        addQueue = null;
+        bounds = null;
+        scale  = null;
+        world  = null;
+        canvas = null;
+    }
+
+    /**
+     * Sets the hashmaps for Texture Regions, Sounds, Fonts, and sets JSON value constants
+     *
+     * @param tMap the hashmap for Texture Regions
+     * @param fMap the hashmap for Fonts
+     * @param sMap the hashmap for Sounds
+     * @param constants the JSON value for constants
+     */
     public void setAssets(HashMap<String, TextureRegion> tMap, HashMap<String, BitmapFont> fMap,
                             HashMap<String, Sound> sMap, JsonValue constants){
         textureRegionAssetMap = tMap;
         fontAssetMap = fMap;
         soundAssetMap = sMap;
         JSONconstants = constants;
+    }
+
+    /**
+     * Immediately adds the object to the physics world
+     *
+     * param obj The object to add
+     */
+    protected void addObject(Obstacle obj) {
+        assert inBounds(obj) : "Object is not in bounds";
+        objects.add(obj);
+        obj.activatePhysics(world);
+    }
+
+    /**
+     *
+     * Adds a physics object in to the insertion queue.
+     *
+     * Objects on the queue are added just before collision processing.  We do this to
+     * control object creation.
+     *
+     * param obj The object to add
+     */
+    public void addQueuedObject(Obstacle obj) {
+        assert inBounds(obj) : "Object is not in bounds";
+        addQueue.add(obj);
+    }
+
+    /**
+     * Returns true if the object is in bounds.
+     *
+     * This assertion is useful for debugging the physics.
+     *
+     * @param obj The object to check.
+     *
+     * @return true if the object is in bounds.
+     */
+    public boolean inBounds(Obstacle obj) {
+        boolean horiz = (bounds.x <= obj.getX() && obj.getX() <= bounds.x+bounds.width);
+        boolean vert  = (bounds.y <= obj.getY() && obj.getY() <= bounds.y+bounds.height);
+        return horiz && vert;
     }
 
     /**
@@ -249,48 +430,6 @@ public class LevelController implements ContactListener {
     }
 
     /**
-     * Returns whether the player has lost
-     *
-     * @param dt	Number of seconds since last animation frame
-     *
-     * @return whether the player has lost
-     */
-    public boolean checkFailure(float dt) {
-        if (!isFailure() && avatar.getY() < -1) {
-            setFailure(true);
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * The core gameplay loop of this world.
-     *
-     * This method contains the specific update code for this mini-game. It does
-     * not handle collisions, as those are managed by the parent class WorldController.
-     * This method is called after input is read, but before collisions are resolved.
-     * The very last thing that it should do is apply forces to the appropriate objects.
-     *
-     * @param dt	Number of seconds since last animation frame
-     */
-    public void update(float dt) {
-        // Process actions in object model
-        avatar.setMovement(InputController.getInstance().getHorizontal() *avatar.getForce());
-        avatar.setJumping(InputController.getInstance().didPrimary());
-        avatar.setShooting(InputController.getInstance().didSecondary());
-
-        // Add a bullet if we fire
-        if (avatar.isShooting()) {
-            createBullet();
-        }
-
-        avatar.applyForce();
-        if (avatar.isJumping()) {
-            jumpId = playSound( soundAssetMap.get("jump"), jumpId, volume );
-        }
-    }
-
-    /**
      * Add a new bullet to the world and send it in the right direction.
      */
     private void createBullet() {
@@ -319,13 +458,12 @@ public class LevelController implements ContactListener {
     /**
      * Remove a new bullet from the world.
      *
-     * @param  bullet   the bullet to remove
+     * @param bullet the bullet to remove
      */
     public void removeBullet(Obstacle bullet) {
         bullet.markRemoved(true);
         plopId = playSound( soundAssetMap.get("plop"), plopId );
     }
-
 
     /**
      * Callback method for the start of a collision
@@ -412,154 +550,37 @@ public class LevelController implements ContactListener {
     public void preSolve(Contact contact, Manifold oldManifold) {}
 
     /**
-     * Called when the Screen is paused.
+     * The core gameplay loop of this world.
      *
-     * We need this method to stop all sounds when we pause.
-     * Pausing happens when we switch game modes.
-     */
-    public void pause() {
-        soundAssetMap.get("jump").stop(jumpId);
-        soundAssetMap.get("plop").stop(plopId);
-        soundAssetMap.get("fire").stop(fireId);
-    }
-
-    /**
-     * Draw the physics objects to the canvas
-     *
-     * For simple worlds, this method is enough by itself.  It will need
-     * to be overridden if the world needs fancy backgrounds or the like.
-     *
-     * The method draws all objects in the order that they were added.
+     * This method contains the specific update code for this mini-game. It does
+     * not handle collisions, as those are managed by the parent class WorldController.
+     * This method is called after input is read, but before collisions are resolved.
+     * The very last thing that it should do is apply forces to the appropriate objects.
      *
      * @param dt	Number of seconds since last animation frame
      */
-    public void draw(float dt) {
-        canvas.clear();
+    public void update(float dt) {
+        // Process actions in object model
+        avatar.setMovement(InputController.getInstance().getHorizontal() *avatar.getForce());
+        avatar.setJumping(InputController.getInstance().didPrimary());
+        avatar.setShooting(InputController.getInstance().didSecondary());
 
-        canvas.begin();
-        for(Obstacle obj : objects) {
-            obj.draw(canvas);
-        }
-        canvas.end();
-
-        if (debug) {
-            canvas.beginDebug();
-            for(Obstacle obj : objects) {
-                obj.drawDebug(canvas);
-            }
-            canvas.endDebug();
+        // Add a bullet if we fire
+        if (avatar.isShooting()) {
+            createBullet();
         }
 
-        // Final message
-        if (complete && !failed) {
-            fontAssetMap.get("retro").setColor(Color.YELLOW);
-            canvas.begin(); // DO NOT SCALE
-            canvas.drawTextCentered("VICTORY!", fontAssetMap.get("retro"), 0.0f);
-            canvas.end();
-        } else if (failed) {
-            fontAssetMap.get("retro").setColor(Color.RED);
-            canvas.begin(); // DO NOT SCALE
-            canvas.drawTextCentered("FAILURE!", fontAssetMap.get("retro"), 0.0f);
-            canvas.end();
+        avatar.applyForce();
+        if (avatar.isJumping()) {
+            jumpId = playSound( soundAssetMap.get("jump"), jumpId, volume );
         }
     }
 
     /**
-     * Returns the canvas associated with this controller
+     * Returns whether to process the update loop
      *
-     * The canvas is shared across all controllers
-     *
-     * @return the canvas associated with this controller
-     */
-    public GameCanvas getCanvas() {
-        return canvas;
-    }
-
-    /**
-     * Sets the canvas associated with this controller
-     *
-     * The canvas is shared across all controllers.  Setting this value will compute
-     * the drawing scale from the canvas size.
-     *
-     * @param canvas the canvas associated with this controller
-     */
-    public void setCanvas(GameCanvas canvas) {
-        this.canvas = canvas;
-        this.scale.x = canvas.getWidth()/bounds.getWidth();
-        this.scale.y = canvas.getHeight()/bounds.getHeight();
-    }
-
-    /**
-     * Dispose of all (non-static) resources allocated to this mode.
-     */
-    public void dispose() {
-        for(Obstacle obj : objects) {
-            obj.deactivatePhysics(world);
-        }
-        objects.clear();
-        addQueue.clear();
-        world.dispose();
-        objects = null;
-        addQueue = null;
-        bounds = null;
-        scale  = null;
-        world  = null;
-        canvas = null;
-    }
-
-
-    /**
-     * Returns true if the level is completed.
-     *
-     * If true, the level will advance after a countdown
-     *
-     * @return true if the level is completed.
-     */
-    public boolean isComplete( ) {
-        return complete;
-    }
-
-    /**
-     * Sets whether the level is completed.
-     *
-     * If true, the level will advance after a countdown
-     *
-     * @param value whether the level is completed.
-     */
-    public void setComplete(boolean value) {
-        if (value) {
-            countdown = EXIT_COUNT;
-        }
-        complete = value;
-    }
-
-    /**
-     * Returns true if the level is failed.
-     *
-     * If true, the level will reset after a countdown
-     *
-     * @return true if the level is failed.
-     */
-    public boolean isFailure( ) {
-        return failed;
-    }
-
-    /**
-     * Sets whether the level is failed.
-     *
-     * If true, the level will reset after a countdown
-     *
-     * @param value whether the level is failed.
-     */
-    public void setFailure(boolean value) {
-        if (value) {
-            countdown = EXIT_COUNT;
-        }
-        failed = value;
-    }
-
-    /**
      * @param dt
+     *
      * @return whether to exit the screen
      */
     public boolean preUpdate(float dt){
@@ -615,44 +636,46 @@ public class LevelController implements ContactListener {
         }
     }
 
-    /**
-     * Immediately adds the object to the physics world
-     *
-     * param obj The object to add
-     */
-    protected void addObject(Obstacle obj) {
-        assert inBounds(obj) : "Object is not in bounds";
-        objects.add(obj);
-        obj.activatePhysics(world);
-    }
 
     /**
-     * Returns true if the object is in bounds.
+     * Draw the physics objects to the canvas
      *
-     * This assertion is useful for debugging the physics.
+     * For simple worlds, this method is enough by itself.  It will need
+     * to be overridden if the world needs fancy backgrounds or the like.
      *
-     * @param obj The object to check.
+     * The method draws all objects in the order that they were added.
      *
-     * @return true if the object is in bounds.
+     * @param dt Number of seconds since last animation frame
      */
-    public boolean inBounds(Obstacle obj) {
-        boolean horiz = (bounds.x <= obj.getX() && obj.getX() <= bounds.x+bounds.width);
-        boolean vert  = (bounds.y <= obj.getY() && obj.getY() <= bounds.y+bounds.height);
-        return horiz && vert;
-    }
+    public void draw(float dt) {
+        canvas.clear();
 
-    /**
-     *
-     * Adds a physics object in to the insertion queue.
-     *
-     * Objects on the queue are added just before collision processing.  We do this to
-     * control object creation.
-     *
-     * param obj The object to add
-     */
-    public void addQueuedObject(Obstacle obj) {
-        assert inBounds(obj) : "Object is not in bounds";
-        addQueue.add(obj);
+        canvas.begin();
+        for(Obstacle obj : objects) {
+            obj.draw(canvas);
+        }
+        canvas.end();
+
+        if (debug) {
+            canvas.beginDebug();
+            for(Obstacle obj : objects) {
+                obj.drawDebug(canvas);
+            }
+            canvas.endDebug();
+        }
+
+        // Final message
+        if (complete && !failed) {
+            fontAssetMap.get("retro").setColor(Color.YELLOW);
+            canvas.begin(); // DO NOT SCALE
+            canvas.drawTextCentered("VICTORY!", fontAssetMap.get("retro"), 0.0f);
+            canvas.end();
+        } else if (failed) {
+            fontAssetMap.get("retro").setColor(Color.RED);
+            canvas.begin(); // DO NOT SCALE
+            canvas.drawTextCentered("FAILURE!", fontAssetMap.get("retro"), 0.0f);
+            canvas.end();
+        }
     }
 
 
