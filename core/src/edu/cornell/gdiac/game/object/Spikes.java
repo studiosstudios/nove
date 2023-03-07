@@ -75,6 +75,9 @@ public class Spikes extends BoxObstacle {
         if (!super.activatePhysics(world)) {
             return false;
         }
+        if (!active) {
+            releaseFixtures();
+        }
         return true;
     }
 

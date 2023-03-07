@@ -36,7 +36,7 @@ public class Nove extends Game implements ScreenListener {
 	/** Player mode for the the game proper (CONTROLLER CLASS) */
 	private int current;
 	/** List of all WorldControllers */
-	private WorldController controller;
+	private WorldController[] controllers;
 	
 	/**
 	 * Creates a new game from the configuration settings.
@@ -56,8 +56,10 @@ public class Nove extends Game implements ScreenListener {
 		canvas  = new GameCanvas();
 		loading = new LoadingMode("assets.json",canvas,1);
 
-		// Initialize the three game worlds
-		controller = new LevelController();
+		// Initialize the two levels
+		controllers = new WorldController[2];
+		controllers[0] = new LevelController(1);
+		controllers[1] = new LevelController(2);
 		current = 0;
 		loading.setScreenListener(this);
 		setScreen(loading);
@@ -71,7 +73,9 @@ public class Nove extends Game implements ScreenListener {
 	public void dispose() {
 		// Call dispose on our children
 		setScreen(null);
-		controller.dispose();
+		for(int ii = 0; ii < controllers.length; ii++) {
+			controllers[ii].dispose();
+		}
 
 		canvas.dispose();
 		canvas = null;
@@ -110,14 +114,31 @@ public class Nove extends Game implements ScreenListener {
 	 */
 	public void exitScreen(Screen screen, int exitCode) {
 		if (screen == loading) {
-			directory = loading.getAssets();
-			controller.gatherAssets(directory);
-			controller.setScreenListener(this);
-			controller.setCanvas(canvas);
-			controller.reset();
-			setScreen(controller);
+			for(int ii = 0; ii < controllers.length; ii++) {
+				directory = loading.getAssets();
+				controllers[ii].gatherAssets(directory);
+				controllers[ii].setScreenListener(this);
+				controllers[ii].setCanvas(canvas);
+			}
+			controllers[current].reset();
+			setScreen(controllers[current]);
+
 			loading.dispose();
 			loading = null;
+		} else if (exitCode == WorldController.EXIT_NEXT) {
+//			System.out.println("switch to next-gdxroot");
+			current = (current+1) % controllers.length;
+			controllers[current].setComplete(true);
+			controllers[current].setRet(false);
+			controllers[current].reset();
+			setScreen(controllers[current]);
+		} else if (exitCode == WorldController.EXIT_PREV) {
+//			System.out.println("exit_prev ran");
+			current = (current+controllers.length-1) % controllers.length;
+			controllers[current].setRet(true);
+			controllers[current].setComplete(false);
+			controllers[current].reset();
+			setScreen(controllers[current]);
 		} else if (exitCode == WorldController.EXIT_QUIT) {
 			// We quit the main application
 			Gdx.app.exit();

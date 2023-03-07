@@ -1,9 +1,12 @@
 package edu.cornell.gdiac.game.object;
 
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.PolygonRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.utils.JsonValue;
+import edu.cornell.gdiac.game.GameCanvas;
 import edu.cornell.gdiac.game.obstacle.*;
 
 public abstract class Activator extends PolygonObstacle {
@@ -41,6 +44,11 @@ public abstract class Activator extends PolygonObstacle {
         setDrawScale(scale);
         setTexture(texture);
         setFixedRotation(true);
+    }
+
+    @Override
+    public void draw(GameCanvas canvas){
+        canvas.draw(texture, Color.WHITE,origin.x,origin.y,getX()*drawScale.x,getY()*drawScale.x,getAngle(),1,1);
     }
 
 }
