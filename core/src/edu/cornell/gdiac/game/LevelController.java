@@ -21,6 +21,9 @@ import edu.cornell.gdiac.game.object.*;
 import edu.cornell.gdiac.assets.AssetDirectory;
 import edu.cornell.gdiac.game.obstacle.*;
 
+import javax.swing.*;
+import java.util.HashMap;
+
 /**
  * Gameplay specific controller for the platformer game.  
  *
@@ -38,6 +41,8 @@ public class LevelController extends WorldController implements ContactListener 
 
     /** Texture asset for the spikes */
     private TextureRegion spikesTexture;
+    /** Texture asset for button avatar */
+    private TextureRegion buttonTexture;
     /** Texture asset for the bridge plank */
     private TextureRegion bridgeTexture;
     /** Texture asset for the flame of the flamethrower */
@@ -68,6 +73,14 @@ public class LevelController extends WorldController implements ContactListener 
     /** Mark set to handle more sophisticated collision callbacks */
     protected ObjectSet<Fixture> sensorFixtures;
 
+    /** object lists - in the future this will be one list maybe */
+    private Array<Activator> activatorList;
+    private Array<Spikes> spikesList;
+
+    /** hashmap to represent activator-spike relationships:
+     *   keys are activator ids specified in JSON*/
+    private HashMap<String, Array<Spikes>> activationRelations;
+
     private int numLives;
     private static final int MAX_NUM_LIVES = 2;
     private float dwidth;
@@ -86,6 +99,9 @@ public class LevelController extends WorldController implements ContactListener 
         setDebug(false);
         setComplete(false);
         setFailure(false);
+        activatorList = new Array<Activator>();
+        spikesList = new Array<Spikes>();
+        activationRelations = new HashMap<String, Array<Spikes>>();
         world.setContactListener(this);
         sensorFixtures = new ObjectSet<Fixture>();
         numLives = MAX_NUM_LIVES;
@@ -105,6 +121,7 @@ public class LevelController extends WorldController implements ContactListener 
         barrierTexture = new TextureRegion(directory.getEntry("platform:barrier",Texture.class));
         bridgeTexture = new TextureRegion(directory.getEntry("platform:rope",Texture.class));
         spikesTexture = new TextureRegion(directory.getEntry("platform:spikes", Texture.class));
+        buttonTexture = new TextureRegion(directory.getEntry("platform:button", Texture.class));
         flameTexture = new TextureRegion(directory.getEntry("platform:flame", Texture.class));
         flamethrowerTexture = new TextureRegion(directory.getEntry("platform:flamethrower", Texture.class));
 
@@ -147,6 +164,10 @@ public class LevelController extends WorldController implements ContactListener 
         dwidth  = goalTile.getRegionWidth()/scale.x;
         dheight = goalTile.getRegionHeight()/scale.y;
 
+        activatorList.clear();
+        spikesList.clear();
+        activationRelations = new HashMap<String, Array<Spikes>>();
+
         JsonValue goal = constants.get("goal");
         JsonValue goalpos = goal.get("pos");
         goalDoor = new BoxObstacle(goalpos.getFloat(0),goalpos.getFloat(1),dwidth,dheight);
@@ -186,8 +207,7 @@ public class LevelController extends WorldController implements ContactListener 
             obj.setFriction(defaults.getFloat( "friction", 0.0f ));
             obj.setRestitution(defaults.getFloat( "restitution", 0.0f ));
             obj.setDrawScale(scale);
-            obj.setTexture(steelTile
-            );
+            obj.setTexture(steelTile);
             obj.setName(pname+ii);
             addObject(obj);
         }
@@ -211,17 +231,51 @@ public class LevelController extends WorldController implements ContactListener 
 //        spinPlatform.setTexture(barrierTexture);
 //        addObject(spinPlatform);
 
+        //Add buttons
+        JsonValue buttonsJV = constants.get("button");
+        for (JsonValue buttonJV : buttonsJV.get("buttons")) {
+            float x = buttonJV.get("pos").getFloat(0);
+            float y = buttonJV.get("pos").getFloat(1);
+            String id = buttonJV.getString("id");
+            Button button = new Button(x, y, id, buttonTexture, scale, buttonsJV);
+            activatorList.add(button);
+            addObject(button);
+        }
 
         // Add spikes
-        JsonValue spikesPosJV = constants.get("spikes").get("pos");
-        JsonValue spikesAngleJV = constants.get("spikes").get("angle");
-        for (int ii = 0; ii < spikesPosJV.size; ii++) {
-            float x = spikesPosJV.get(ii).getFloat(0);
-            float y = spikesPosJV.get(ii).getFloat(1);
-            float angle = spikesAngleJV.getFloat(ii);
-            Spikes spikes = new Spikes(x, y, angle, spikesTexture, scale, constants.get("spikes").get("spike"));
+        JsonValue spikesJV = constants.get("spike");
+        for (JsonValue spikeJV : spikesJV.get("spikes")) {
+            float x = spikeJV.get("pos").getFloat(0);
+            float y = spikeJV.get("pos").getFloat(1);
+            float angle = spikeJV.getFloat("angle");
+            boolean active = spikeJV.getBoolean("active");
+            String activatorID = spikeJV.getString("activatorID");
+
+            Spikes spikes = new Spikes(x, y, angle, active, spikesTexture, scale, spikesJV);
+
+            //add to dependency map if there is an associated activator
+            if (!activatorID.equals("")){
+                if (activationRelations.containsKey(activatorID)){
+                    activationRelations.get(activatorID).add(spikes);
+                } else {
+                    activationRelations.put(spikeJV.getString("activatorID"), new Array<Spikes>(new Spikes[]{spikes}));
+                }
+            }
+            spikesList.add(spikes);
             addObject(spikes);
         }
+
+        //Add pushable box
+        dwidth  = steelTile.getRegionWidth()/scale.x;
+        dheight = steelTile.getRegionHeight()/scale.y;
+        BoxObstacle box = new BoxObstacle(2, 4, dwidth, dheight);
+        box.setTexture(steelTile);
+        box.setDrawScale(scale);
+        box.setName("box");
+        box.setFriction(0.9f);
+        box.setMass(200);
+        addObject(box);
+
         volume = constants.getFloat("volume", 1.0f);
 
         // Create flamethrower
@@ -292,6 +346,16 @@ public class LevelController extends WorldController implements ContactListener 
         avatar.applyForce();
         if (avatar.isJumping() && avatar.isGrounded()) {
             jumpId = playSound( jumpSound, jumpId, volume );
+        }
+
+        // Process buttons
+        for (Activator a : activatorList){
+            a.updateActivated();
+            if (activationRelations.containsKey(a.getID())){
+                for (Spikes s : activationRelations.get(a.getID())){
+                    s.setActive(a.isActive());
+                }
+            }
         }
     }
     private void dash(){
@@ -367,6 +431,13 @@ public class LevelController extends WorldController implements ContactListener 
 //            } else {
 //                died = false;
             }
+
+            // Check for button
+            if (fd2 instanceof Button) {
+                ((Button) fd2).setPressed(true);
+            } else if (fd1 instanceof Button) {
+                ((Button) fd1).setPressed(true);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -405,6 +476,12 @@ public class LevelController extends WorldController implements ContactListener 
         if ((avatar.getSideSensorName().equals(fd2) && avatar != bd1) ||
                 (avatar.getSideSensorName().equals(fd1) && avatar != bd2)) {
             avatar.decrementWalled();
+            // Check for button
+            if (fd2 instanceof Button) {
+                ((Button) fd2).setPressed(false);
+            } else if (fd1 instanceof Button) {
+                ((Button) fd1).setPressed(false);
+            }
         }
     }
 
