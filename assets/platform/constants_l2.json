@@ -22,14 +22,14 @@
 		"pos": [0.5, 2.0],
 		"ret_pos": [-20,-20], //temp impossible
 		"shrink": [0.7, 0.95],
-		"force": 20.0,
-		"damping": 10.0,
+		"force": 30.0,
+		"damping": 30.0,
 		"density": 1.0,
 		"friction": 0.0,
-		"maxspeed": 5.0,
-		"jump_force": 8,
-		"jump_cool": 30,
-		"shot_cool": 40,
+		"maxspeed": 6.5,
+		"jump_force": 1.6,
+		"jump_damping": 0.8,
+		"dash_force": 4,
 		"sensor": {
 			"shrink" : 0.6,
 			"height" : 0.05
@@ -52,6 +52,44 @@
     	"speed"  : 20.0,
 		"density": 10.0
     },
+	"spike" : {
+		"spikes":
+		[{"pos" : [10, 1], "angle": 0, "active": true, "activatorID": "button1"},
+			{"pos" : [11, 1], "angle": 0, "active": true, "activatorID": "button1"},
+			{"pos" : [17, 1], "angle": 0, "active": false, "activatorID": "button1"},
+			{"pos" : [29, 4], "angle": 90, "active": true, "activatorID": "button2"},
+			{"pos" : [29, 3], "angle": 90, "active": true, "activatorID": "button2"},
+			{"pos" : [29, 2], "angle": 90, "active": true, "activatorID": "button2"}],
+		"sensor_height_scale": 0.02,
+		"sensor_width_scale": 0.9,
+		"offset": [
+			0.5,
+			0.5
+		]
+	},
+	"button": {
+		"body_shape" : [-0.5, 0, 0.5, 0, 0.3, 0.05, -0.3, 0.05],
+		"sensor_shape" : [-0.5, 0, 0.5, 0, 0.5, 0.3, -0.5, 0.3],
+		"friction" : 0.4,
+		"offset": [0.5, 0],
+		"buttons": [
+			{"pos": [4, 2], "id" : "button1"},
+			{"pos": [13, 5], "id" : "button2"}
+		]
+
+	},
+	"box": {
+		"friction" : 0.9,
+		"mass" : 200,
+		"boxes" : [
+			{"pos" :  [2, 4]}
+		]
+	},
+	"flamethrower": {
+		"flamethrowers" : [
+			{"pos" :  [24, 3.8], "angle" : 0}
+		]
+	},
 	"walls": 		[
 //						[0.0, 2.0, 0.0, 5.0, -1.0, 3.5], //invisible entrance wall
 			 			[32.0, 18.0, 32.0, 17.0,  2.0, 17.0, //top-left

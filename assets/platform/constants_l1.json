@@ -22,14 +22,14 @@
 		"pos": [1.0, 2.0],
 		"ret_pos": [31.5, 2.0],
 		"shrink": [0.7, 0.95],
-		"force": 20.0,
-		"damping": 10.0,
+		"force": 30.0,
+		"damping": 30.0,
 		"density": 1.0,
 		"friction": 0.0,
-		"maxspeed": 5.0,
-		"jump_force": 8,
-		"jump_cool": 30,
-		"shot_cool": 40,
+		"maxspeed": 6.5,
+		"jump_force": 1.6,
+		"jump_damping": 0.8,
+		"dash_force": 4,
 		"sensor": {
 			"shrink" : 0.6,
 			"height" : 0.05
@@ -47,11 +47,39 @@
 		"high_density": 10.0,
 		"radius": 0.1
 	},
+	"spike" : {
+		"spikes": [],
+		"sensor_height_scale": 0.02,
+		"sensor_width_scale": 0.9,
+		"offset": [
+			0.5,
+			0.5
+		]
+	},
+	"button": {
+		"body_shape" : [-0.5, 0, 0.5, 0, 0.3, 0.05, -0.3, 0.05],
+		"sensor_shape" : [-0.5, 0, 0.5, 0, 0.5, 0.3, -0.5, 0.3],
+		"friction" : 0.4,
+		"offset": [0.5, 0],
+		"buttons": [
+		]
+
+	},
     "bullet": {
     	"offset" : 0.2,
     	"speed"  : 20.0,
 		"density": 10.0
     },
+	"box": {
+		"friction" : 0.9,
+		"mass" : 200,
+		"boxes" : [
+		]
+	},
+	"flamethrower": {
+		"flamethrowers" : [
+		]
+	},
 	"walls": 		[
 						[0.0, 2.0, 0.0, 17.0, -1.0, 17.0, -1.0, 2], //invisible left side
 						[30.0, 7.0, 32.0, 7.0, 32.0, 17.0, 30.0, 17.0], //left

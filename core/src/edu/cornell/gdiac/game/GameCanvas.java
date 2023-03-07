@@ -1133,6 +1133,20 @@ public class GameCanvas {
     	debugRender.setColor(color);
     	debugRender.ellipse(x0-w, y0-h, 2*w, 2*h, 12);
     }
+
+	/**
+	 * Draws a line of a specific color between two points.
+	 *
+	 * @param p1 Endpoint of the line
+	 * @param p2 Endpoint of the line
+	 * @param color The outline color
+	 * @param sx The amount to scale the x-axis
+	 * @param sy The amount to scale the y-axis
+	 */
+	public void drawLine(Vector2 p1, Vector2 p2, Color color, float sx, float sy){
+		debugRender.setColor(color);
+		debugRender.line(p1.scl(new Vector2(sx, sy)), p2.scl(new Vector2(sx, sy)));
+	}
     
 	/**
 	 * Compute the affine transform (and store it in local) for this image.

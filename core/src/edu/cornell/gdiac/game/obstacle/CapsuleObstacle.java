@@ -58,19 +58,19 @@ public class CapsuleObstacle extends SimpleObstacle {
 	private Vector2 sizeCache;
     /** A cache value for the center fixture (for resizing) */
 	private Fixture core;
-    /** A cache value for the first end cap fixture (for resizing) */
-    private Fixture cap1;
-    /** A cache value for the second end cap fixture (for resizing) */
-    private Fixture cap2;
-    /** The capsule orientation */
-    private Orientation orient;
+	/** A cache value for the first end cap fixture (for resizing) */
+	private Fixture cap1;
+	/** A cache value for the second end cap fixture (for resizing) */
+	private Fixture cap2;
+	/** The capsule orientation */
+	private Orientation orient;
 	/** Cache of the polygon vertices (for resizing) */
 	private float[] vertices;
-	
+
 	/** A cache value for computing fixtures */
 	private Vector2 posCache = new Vector2();
-    /** The seam offset of the core rectangle */
-    private float seamEpsilon;
+	/** The seam offset of the core rectangle */
+	private float seamEpsilon;
 
 	/** 
 	 * Returns the dimensions of this box
@@ -278,13 +278,13 @@ public class CapsuleObstacle extends SimpleObstacle {
 		vertices = new float[8];
 
 		core = null;
-	    cap1 = null;
-	    cap2 = null;
-	    orient = o;
-	    seamEpsilon = DEFAULT_EPSILON;
+		cap1 = null;
+		cap2 = null;
+		orient = o;
+		seamEpsilon = DEFAULT_EPSILON;
 
 		// Initialize
-		resize(width, height);	
+		resize(width, height);
 	}
 	
 	/**

@@ -21,6 +21,9 @@ import edu.cornell.gdiac.game.object.*;
 import edu.cornell.gdiac.assets.AssetDirectory;
 import edu.cornell.gdiac.game.obstacle.*;
 
+import javax.swing.*;
+import java.util.HashMap;
+
 /**
  * Gameplay specific controller for the platformer game.  
  *
@@ -35,10 +38,17 @@ public class LevelController extends WorldController implements ContactListener 
     private TextureRegion avatarTexture;
     /** Texture asset for the spinning barrier */
     private TextureRegion barrierTexture;
-    /** Texture asset for the bullet */
-    private TextureRegion bulletTexture;
+
+    /** Texture asset for the spikes */
+    private TextureRegion spikesTexture;
+    /** Texture asset for button avatar */
+    private TextureRegion buttonTexture;
     /** Texture asset for the bridge plank */
     private TextureRegion bridgeTexture;
+    /** Texture asset for the flame of the flamethrower */
+    private TextureRegion flameTexture;
+    /** Texture asset for the base of the flamethrower */
+    private TextureRegion flamethrowerTexture;
 
     /** The jump sound.  We only want to play once. */
     private Sound jumpSound;
@@ -70,6 +80,22 @@ public class LevelController extends WorldController implements ContactListener 
 
     public boolean isRet;
 
+    /** object lists - in the future this will be one list maybe */
+    private Array<Activator> activatorList;
+    private Array<Spikes> spikesList;
+
+    /** hashmap to represent activator-spike relationships:
+     *   keys are activator ids specified in JSON*/
+    private HashMap<String, Array<Spikes>> activationRelations;
+
+    private int numLives;
+    private static final int MAX_NUM_LIVES = 2;
+    private float dwidth;
+    private float dheight;
+    private Vector2 respawnPos;
+    private boolean died;
+    private DeadCat new_dead_body;
+
     /**
      * Creates and initialize a new instance of the platformer game
      *
@@ -82,9 +108,14 @@ public class LevelController extends WorldController implements ContactListener 
 //        System.out.println("ret set to false in Level Controller");
         setRet(false);
         setFailure(false);
+        activatorList = new Array<Activator>();
+        spikesList = new Array<Spikes>();
+        activationRelations = new HashMap<String, Array<Spikes>>();
         world.setContactListener(this);
         sensorFixtures = new ObjectSet<Fixture>();
         this.level = level;
+        numLives = MAX_NUM_LIVES;
+        died = false;
     }
 
     /**
@@ -98,8 +129,11 @@ public class LevelController extends WorldController implements ContactListener 
     public void gatherAssets(AssetDirectory directory) {
         avatarTexture  = new TextureRegion(directory.getEntry("platform:cat",Texture.class));
         barrierTexture = new TextureRegion(directory.getEntry("platform:barrier",Texture.class));
-        bulletTexture = new TextureRegion(directory.getEntry("platform:bullet",Texture.class));
         bridgeTexture = new TextureRegion(directory.getEntry("platform:rope",Texture.class));
+        spikesTexture = new TextureRegion(directory.getEntry("platform:spikes", Texture.class));
+        buttonTexture = new TextureRegion(directory.getEntry("platform:button", Texture.class));
+        flameTexture = new TextureRegion(directory.getEntry("platform:flame", Texture.class));
+        flamethrowerTexture = new TextureRegion(directory.getEntry("platform:flamethrower", Texture.class));
 
         jumpSound = directory.getEntry( "platform:jump", Sound.class );
         fireSound = directory.getEntry( "platform:pew", Sound.class );
@@ -125,8 +159,6 @@ public class LevelController extends WorldController implements ContactListener 
      * This method disposes of the world and creates a new one.
      */
     public void reset() {
-//        System.out.println("temp_ret is: " + temp_ret);
-//        System.out.println("temp_comp is: " + isComplete());
         Vector2 gravity = new Vector2(world.getGravity() );
 
         for(Obstacle obj : objects) {
@@ -135,12 +167,12 @@ public class LevelController extends WorldController implements ContactListener 
         objects.clear();
         addQueue.clear();
         world.dispose();
+        numLives = MAX_NUM_LIVES;
 
         world = new World(gravity,false);
         world.setContactListener(this);
         setComplete(false);
         boolean temp_ret = isRet();
-//        System.out.println("temp_ret is: " + temp_ret);
         setRet(false);
         setFailure(false);
         populateLevel(temp_ret);
@@ -150,10 +182,13 @@ public class LevelController extends WorldController implements ContactListener 
      * Lays out the game geography.
      */
     private void populateLevel(boolean ret) {
-//        System.out.println("populate level:" + ret);
         // Add level goal
-        float dwidth  = goalTile.getRegionWidth()/scale.x;
-        float dheight = goalTile.getRegionHeight()/scale.y;
+        dwidth  = goalTile.getRegionWidth()/scale.x;
+        dheight = goalTile.getRegionHeight()/scale.y;
+
+        activatorList.clear();
+        spikesList.clear();
+        activationRelations = new HashMap<String, Array<Spikes>>();
 
         JsonValue goal = constants.get("goal");
         JsonValue goalpos = goal.get("pos");
@@ -207,22 +242,13 @@ public class LevelController extends WorldController implements ContactListener 
             obj.setFriction(defaults.getFloat( "friction", 0.0f ));
             obj.setRestitution(defaults.getFloat( "restitution", 0.0f ));
             obj.setDrawScale(scale);
-            obj.setTexture(steelTile
-            );
+            obj.setTexture(steelTile);
             obj.setName(pname+ii);
             addObject(obj);
         }
 
         // This world is heavier
         world.setGravity( new Vector2(0,defaults.getFloat("gravity",0)) );
-
-        // Create dude
-        dwidth  = avatarTexture.getRegionWidth()/scale.x;
-        dheight = avatarTexture.getRegionHeight()/scale.y;
-        avatar = new Cat(constants.get("cat"), dwidth, dheight, ret, avatar == null? null : avatar.getPosition());
-        avatar.setDrawScale(scale);
-        avatar.setTexture(avatarTexture);
-        addObject(avatar);
 
         // Create rope bridge
 //        dwidth  = bridgeTexture.getRegionWidth()/scale.x;
@@ -240,7 +266,76 @@ public class LevelController extends WorldController implements ContactListener 
 //        spinPlatform.setTexture(barrierTexture);
 //        addObject(spinPlatform);
 
+        //Add buttons
+        JsonValue buttonsJV = constants.get("button");
+        for (JsonValue buttonJV : buttonsJV.get("buttons")) {
+            float x = buttonJV.get("pos").getFloat(0);
+            float y = buttonJV.get("pos").getFloat(1);
+            String id = buttonJV.getString("id");
+            Button button = new Button(x, y, id, buttonTexture, scale, buttonsJV);
+            activatorList.add(button);
+            addObject(button);
+        }
+
+        // Add spikes
+        JsonValue spikesJV = constants.get("spike");
+        for (JsonValue spikeJV : spikesJV.get("spikes")) {
+            float x = spikeJV.get("pos").getFloat(0);
+            float y = spikeJV.get("pos").getFloat(1);
+            float angle = spikeJV.getFloat("angle");
+            boolean active = spikeJV.getBoolean("active");
+            String activatorID = spikeJV.getString("activatorID");
+
+            Spikes spikes = new Spikes(x, y, angle, active, spikesTexture, scale, spikesJV);
+
+            //add to dependency map if there is an associated activator
+            if (!activatorID.equals("")){
+                if (activationRelations.containsKey(activatorID)){
+                    activationRelations.get(activatorID).add(spikes);
+                } else {
+                    activationRelations.put(spikeJV.getString("activatorID"), new Array<Spikes>(new Spikes[]{spikes}));
+                }
+            }
+            spikesList.add(spikes);
+            addObject(spikes);
+        }
+
+        //Add pushable boxes
+        JsonValue boxesJV = constants.get("box");
+        dwidth  = steelTile.getRegionWidth()/scale.x;
+        dheight = steelTile.getRegionHeight()/scale.y;
+        for (JsonValue boxJV : boxesJV.get("boxes")) {
+            float x = boxJV.get("pos").getFloat(0);
+            float y = boxJV.get("pos").getFloat(1);
+            BoxObstacle box = new BoxObstacle(x, y, dwidth, dheight);
+            box.setTexture(steelTile);
+            box.setDrawScale(scale);
+            box.setName("box");
+            box.setFriction(boxesJV.getFloat("friction"));
+            box.setMass(boxesJV.getFloat("mass"));
+            addObject(box);
+        }
+
         volume = constants.getFloat("volume", 1.0f);
+
+        // Create flamethrowers
+        JsonValue flamethrowersJV = constants.get("flamethrower");
+        for (JsonValue flamethrowerJV : flamethrowersJV.get("flamethrowers")) {
+            float x = flamethrowerJV.get("pos").getFloat(0);
+            float y = flamethrowerJV.get("pos").getFloat(1);
+            float angle = flamethrowerJV.getFloat("angle");
+            Flamethrower flamethrower = new Flamethrower(constants.get("flamethrower"),x, y, angle, scale, flamethrowerTexture, flameTexture);
+            addObject(flamethrower);
+        }
+
+        // Create dude
+        dwidth  = avatarTexture.getRegionWidth()/scale.x;
+        dheight = avatarTexture.getRegionHeight()/scale.y;
+        avatar = new Cat(constants.get("cat"), dwidth, dheight, ret, avatar == null? null : avatar.getPosition());
+        avatar.setDrawScale(scale);
+        avatar.setTexture(avatarTexture);
+        respawnPos = avatar.getPosition();
+        addObject(avatar);
     }
 
     /**
@@ -265,6 +360,12 @@ public class LevelController extends WorldController implements ContactListener 
             return false;
         }
 
+        if (!isFailure() && died) {
+            died = false;
+            avatar.setPosition(respawnPos);
+            addObject(new_dead_body);
+        }
+
         return true;
     }
 
@@ -282,43 +383,28 @@ public class LevelController extends WorldController implements ContactListener 
         // Process actions in object model
         avatar.setMovement(InputController.getInstance().getHorizontal() *avatar.getForce());
         avatar.setJumping(InputController.getInstance().didPrimary());
-        avatar.setShooting(InputController.getInstance().didSecondary());
-
+        avatar.setDashing(InputController.getInstance().didDash());
         // Add a bullet if we fire
-        if (avatar.isShooting()) {
-            createBullet();
+        if (avatar.isDashing()) {
+            dash();
         }
-
         avatar.applyForce();
-        if (avatar.isJumping()) {
+        if (avatar.isJumping() && avatar.isGrounded()) {
             jumpId = playSound( jumpSound, jumpId, volume );
         }
+
+        // Process buttons
+        for (Activator a : activatorList){
+            a.updateActivated();
+            if (activationRelations.containsKey(a.getID())){
+                for (Spikes s : activationRelations.get(a.getID())){
+                    s.setActive(a.isActive());
+                }
+            }
+        }
     }
-
-    /**
-     * Add a new bullet to the world and send it in the right direction.
-     */
-    private void createBullet() {
-        JsonValue bulletjv = constants.get("bullet");
-        float offset = bulletjv.getFloat("offset",0);
-        offset *= (avatar.isFacingRight() ? 1 : -1);
-        float radius = bulletTexture.getRegionWidth()/(2.0f*scale.x);
-        WheelObstacle bullet = new WheelObstacle(avatar.getX()+offset, avatar.getY(), radius);
-
-        bullet.setName("bullet");
-        bullet.setDensity(bulletjv.getFloat("density", 0));
-        bullet.setDrawScale(scale);
-        bullet.setTexture(bulletTexture);
-        bullet.setBullet(true);
-        bullet.setGravityScale(0);
-
-        // Compute position and velocity
-        float speed = bulletjv.getFloat( "speed", 0 );
-        speed  *= (avatar.isFacingRight() ? 1 : -1);
-        bullet.setVX(speed);
-        addQueuedObject(bullet);
-
-        fireId = playSound( fireSound, fireId );
+    private void dash(){
+        avatar.getPosition();
     }
 
     /**
@@ -352,8 +438,8 @@ public class LevelController extends WorldController implements ContactListener 
         Object fd2 = fix2.getUserData();
 
         try {
-            Obstacle bd1 = (Obstacle)body1.getUserData();
-            Obstacle bd2 = (Obstacle)body2.getUserData();
+            Obstacle bd1 = (Obstacle) body1.getUserData();
+            Obstacle bd2 = (Obstacle) body2.getUserData();
 
             // Test bullet collision with world
             if (bd1.getName().equals("bullet") && bd2 != avatar) {
@@ -372,18 +458,31 @@ public class LevelController extends WorldController implements ContactListener 
             }
 
             // Check for win condition
-            if ((bd1 == avatar   && bd2 == goalDoor) ||
+            if ((bd1 == avatar && bd2 == goalDoor) ||
                     (bd1 == goalDoor && bd2 == avatar)) {
                 setComplete(true);
             }
             if ((bd1 == avatar && bd2 == retDoor) ||
-                    (bd1 == retDoor && bd2 == avatar)){
+                    (bd1 == retDoor && bd2 == avatar)) {
                 setRet(true);
             }
-        } catch (Exception e) {
+            // Check for death
+            if ((bd1 == avatar && (fd2 == Spikes.getSensorName() || fd2 == Flame.getSensorName())) ||
+                    (bd2 == avatar && (fd1 == Spikes.getSensorName() || fd1 == Flame.getSensorName()))) {
+                die();
+//            } else {
+//                died = false;
+            }
+
+            // Check for button
+            if (fd2 instanceof Button) {
+                ((Button) fd2).setPressed(true);
+            } else if (fd1 instanceof Button) {
+                ((Button) fd1).setPressed(true);
+            }
+        }catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     /**
@@ -413,6 +512,13 @@ public class LevelController extends WorldController implements ContactListener 
                 avatar.setGrounded(false);
             }
         }
+
+        // Check for button
+        if (fd2 instanceof Button) {
+            ((Button) fd2).setPressed(false);
+        } else if (fd1 instanceof Button) {
+            ((Button) fd1).setPressed(false);
+        }
     }
 
     /** Unused ContactListener method */
@@ -431,4 +537,34 @@ public class LevelController extends WorldController implements ContactListener 
         plopSound.stop(plopId);
         fireSound.stop(fireId);
     }
+
+    /**
+     * Called when a player dies. Removes all input but keeps velocities.
+     * TODO: create and return body to be used in preSolve (for fixing to spikes)
+     */
+    private void die(){
+        avatar.setJumping(false);
+        died = true;
+        System.out.println(numLives);
+        // decrement lives
+        numLives--;
+
+        // 0 lives
+        if (numLives <= 0) {
+            numLives=MAX_NUM_LIVES;
+            setFailure(true);
+            new_dead_body.markRemoved(true);
+            avatar.markRemoved(true);
+        } else {
+            // create dead body
+            DeadCat dead_body = new DeadCat(constants.get("cat"), dwidth, dheight);
+            dead_body.setDrawScale(scale);
+            dead_body.setTexture(avatarTexture);
+            dead_body.setSensor(false);
+            dead_body.setLinearVelocity(new Vector2(0,0));
+            dead_body.setPosition(avatar.getPosition());
+            new_dead_body = dead_body;
+        }
+    }
+
 }

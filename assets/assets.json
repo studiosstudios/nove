@@ -15,15 +15,19 @@
         "platform:rope":  "platform/ropebridge.png",
         "platform:barrier": "platform/barrier.png",
         "platform:bullet":  "platform/bullet.png",
+        "platform:spikes": "platform/spikes.png",
+        "platform:button": "platform/button.png",
+        "platform:flamethrower": "platform/flamethrower.png",
+        "platform:flame": "platform/flame.png"
     },
     "jsons"  : {
         "platform:constants_l1": "platform/constants_l1.json",
-        "platform:constants_l2": "platform/constants_l2.json",
+        "platform:constants_l2": "platform/constants_l2.json"
     },
     "sounds" : {
         "platform:jump" : "platform/jump.mp3",
         "platform:pew"  : "platform/pew.mp3",
-        "platform:plop" : "platform/plop.mp3",
+        "platform:plop" : "platform/plop.mp3"
     },
     "fonts": {
         "shared:retro": {

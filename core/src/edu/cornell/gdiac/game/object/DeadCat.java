@@ -10,13 +10,15 @@
  */
 package edu.cornell.gdiac.game.object;
 
-import com.badlogic.gdx.math.*;
-import com.badlogic.gdx.graphics.*;
-import com.badlogic.gdx.physics.box2d.*;
-
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.Fixture;
+import com.badlogic.gdx.physics.box2d.FixtureDef;
+import com.badlogic.gdx.physics.box2d.PolygonShape;
+import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.JsonValue;
-import edu.cornell.gdiac.game.*;
-import edu.cornell.gdiac.game.obstacle.*;
+import edu.cornell.gdiac.game.GameCanvas;
+import edu.cornell.gdiac.game.obstacle.CapsuleObstacle;
 
 /**
  * Player avatar for the plaform game.
@@ -24,7 +26,7 @@ import edu.cornell.gdiac.game.obstacle.*;
  * Note that this class returns to static loading.  That is because there are
  * no other subclasses that we might loop through.
  */
-public class Cat extends CapsuleObstacle {
+public class DeadCat extends CapsuleObstacle {
     /** The initializing data (to avoid magic numbers) */
     private final JsonValue data;
 
@@ -207,10 +209,10 @@ public class Cat extends CapsuleObstacle {
      * @param width		The object width in physics units
      * @param height	The object width in physics units
      */
-    public Cat(JsonValue data, float width, float height, boolean ret, Vector2 prev_pos) {
+    public DeadCat(JsonValue data, float width, float height) {
         // The shrink factors fit the image to a tigher hitbox
-        super(data.get(ret?"ret_pos":"pos").getFloat(0),
-                prev_pos == null ? data.get(ret?"ret_pos":"pos").getFloat(1) : prev_pos.y,
+        super(	data.get("pos").getFloat(0),
+                data.get("pos").getFloat(1),
                 width*data.get("shrink").getFloat( 0 ),
                 height*data.get("shrink").getFloat( 1 ),
                 Orientation.TOP);
@@ -231,11 +233,9 @@ public class Cat extends CapsuleObstacle {
         isGrounded = false;
         canDash = true;
         isJumping = false;
-        if(ret)
-            faceRight = false;
-        else
-            faceRight = true;
+        faceRight = true;
         stoppedJumping = false;
+
         setName("cat");
     }
 
