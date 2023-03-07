@@ -49,6 +49,8 @@ public class LevelController extends WorldController implements ContactListener 
     private TextureRegion flameTexture;
     /** Texture asset for the base of the flamethrower */
     private TextureRegion flamethrowerTexture;
+    /** Texture asset for the dead cat */
+    private TextureRegion deadCatTexture;
 
     /** The jump sound.  We only want to play once. */
     private Sound jumpSound;
@@ -137,6 +139,7 @@ public class LevelController extends WorldController implements ContactListener 
         buttonTexture = new TextureRegion(directory.getEntry("platform:button", Texture.class));
         flameTexture = new TextureRegion(directory.getEntry("platform:flame", Texture.class));
         flamethrowerTexture = new TextureRegion(directory.getEntry("platform:flamethrower", Texture.class));
+        deadCatTexture = new TextureRegion((directory.getEntry("platform:deadCat", Texture.class)));
 
         jumpSound = directory.getEntry( "platform:jump", Sound.class );
         fireSound = directory.getEntry( "platform:pew", Sound.class );
@@ -367,6 +370,7 @@ public class LevelController extends WorldController implements ContactListener 
 
         if (!isFailure() && died) {
             died = false;
+            new_dead_body.setFacingRight(avatar.isFacingRight());
             avatar.setPosition(respawnPos);
             deadCats.add(new_dead_body);
             addObject(new_dead_body);
@@ -569,7 +573,7 @@ public class LevelController extends WorldController implements ContactListener 
             // create dead body
             DeadCat dead_body = new DeadCat(constants.get("cat"), dwidth, dheight);
             dead_body.setDrawScale(scale);
-            dead_body.setTexture(avatarTexture);
+            dead_body.setTexture(deadCatTexture);
             dead_body.setSensor(false);
             dead_body.setLinearVelocity(new Vector2(0,0));
             dead_body.setPosition(avatar.getPosition());

@@ -12,6 +12,7 @@
         },
         "shared:goal":   "shared/goaldoor.png",
         "platform:cat":  "platform/cat.png",
+        "platform:deadCat": "platform/deadCat.png",
         "platform:rope":  "platform/ropebridge.png",
         "platform:barrier": "platform/barrier.png",
         "platform:bullet":  "platform/bullet.png",

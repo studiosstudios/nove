@@ -197,7 +197,9 @@ public class DeadCat extends CapsuleObstacle {
     public boolean isFacingRight() {
         return faceRight;
     }
-
+    public void setFacingRight(boolean facingRight) {
+        faceRight = facingRight;
+    }
     /**
      * Creates a new cat avatar with the given physics data
      *
