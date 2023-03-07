@@ -17,7 +17,8 @@
         "platform:bullet":  "platform/bullet.png",
     },
     "jsons"  : {
-        "platform:constants": "platform/constants.json",
+        "platform:constants_l1": "platform/constants_l1.json",
+        "platform:constants_l2": "platform/constants_l2.json",
     },
     "sounds" : {
         "platform:jump" : "platform/jump.mp3",

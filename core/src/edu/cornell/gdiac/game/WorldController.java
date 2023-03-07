@@ -59,7 +59,7 @@ public abstract class WorldController implements Screen {
 	/** Exit code for jumping back to previous level */
 	public static final int EXIT_PREV = 2;
     /** How many frames after winning/losing do we continue? */
-	public static final int EXIT_COUNT = 120;
+	public static final int EXIT_COUNT = 0;
 
 	/** The amount of time for a physics engine step. */
 	public static final float WORLD_STEP = 1/60.0f;
@@ -369,14 +369,16 @@ public abstract class WorldController implements Screen {
 			pause();
 			listener.exitScreen(this, EXIT_QUIT);
 			return false;
-		} else if (countdown > 0) {
+		}
+		else if (countdown > 0) {
 			countdown--;
 		} else if (countdown == 0) {
 			if (failed) {
 				reset();
 			} else if (complete) {
 				pause();
-				reset();
+//				System.out.println("switchtonext-worldcontroller");
+				listener.exitScreen(this, EXIT_NEXT);
 				return false;
 			}
 		}
@@ -461,7 +463,7 @@ public abstract class WorldController implements Screen {
 		if (complete && !failed) {
 			displayFont.setColor(Color.YELLOW);
 			canvas.begin(); // DO NOT SCALE
-			canvas.drawTextCentered("VICTORY!", displayFont, 0.0f);
+//			canvas.drawTextCentered("VICTORY!", displayFont, 0.0f);
 			canvas.end();
 		} else if (failed) {
 			displayFont.setColor(Color.RED);

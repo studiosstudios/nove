@@ -63,18 +63,22 @@ public class LevelController extends WorldController implements ContactListener 
     /** Mark set to handle more sophisticated collision callbacks */
     protected ObjectSet<Fixture> sensorFixtures;
 
+    /** Level number **/
+    private int level;
+
     /**
      * Creates and initialize a new instance of the platformer game
      *
      * The game has default gravity and other settings
      */
-    public LevelController() {
+    public LevelController(int level) {
         super(DEFAULT_WIDTH,DEFAULT_HEIGHT,DEFAULT_GRAVITY);
         setDebug(false);
         setComplete(false);
         setFailure(false);
         world.setContactListener(this);
         sensorFixtures = new ObjectSet<Fixture>();
+        this.level = level;
     }
 
     /**
@@ -95,7 +99,17 @@ public class LevelController extends WorldController implements ContactListener 
         fireSound = directory.getEntry( "platform:pew", Sound.class );
         plopSound = directory.getEntry( "platform:plop", Sound.class );
 
-        constants = directory.getEntry( "platform:constants", JsonValue.class );
+        switch(level) {
+            case 1:
+                constants = directory.getEntry("platform:constants_l1", JsonValue.class);
+                break;
+            case 2:
+                constants = directory.getEntry("platform:constants_l2", JsonValue.class);
+                break;
+            default:
+                throw new RuntimeException("Invalid level");
+        }
+
         super.gatherAssets(directory);
     }
 
