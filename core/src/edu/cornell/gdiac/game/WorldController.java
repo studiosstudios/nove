@@ -388,7 +388,10 @@ public abstract class WorldController implements Screen {
 		else if (countdown > 0) {
 			countdown--;
 		} else if (countdown == 0) {
+//			System.out.println("got to preupdate");
+
 			if (failed) {
+//				System.out.println("got to failed here");
 				reset();
 			} else if (complete) {
 				pause();

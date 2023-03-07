@@ -361,6 +361,7 @@ public class LevelController extends WorldController implements ContactListener 
         }
 
         if (!isFailure() && died) {
+//            System.out.println("haha");
             died = false;
             avatar.setPosition(respawnPos);
             addObject(new_dead_body);
@@ -545,12 +546,13 @@ public class LevelController extends WorldController implements ContactListener 
     private void die(){
         avatar.setJumping(false);
         died = true;
-        System.out.println(numLives);
+//        System.out.println(numLives);
         // decrement lives
         numLives--;
-
+        System.out.println(numLives);
         // 0 lives
         if (numLives <= 0) {
+            avatar.setPosition(avatar.getX(), avatar.getY()+2);
             numLives=MAX_NUM_LIVES;
             setFailure(true);
             new_dead_body.markRemoved(true);
