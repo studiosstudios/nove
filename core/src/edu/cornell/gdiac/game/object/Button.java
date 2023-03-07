@@ -19,7 +19,7 @@ public class Button extends Activator {
 
     /** for a button, active = pressed */
     public void updateActivated(){
-        active = isPressed;
+        active = isPressed();
     }
 
 }
