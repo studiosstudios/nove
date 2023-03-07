@@ -302,23 +302,29 @@ public class Cat extends CapsuleObstacle {
             forceCache.set(getMovement(),0);
             body.applyForce(forceCache,getPosition(),true);
         }
-        if (isDashing() && canDash && isJumping()){
-            if(movement > 0){
-                forceCache.set(dash_force,dash_force);
-            }
-            else if(movement < 0){
-                forceCache.set(-dash_force,dash_force);
-            }
-            else{
-                forceCache.set(0,dash_force);
-            }
-            body.applyLinearImpulse(forceCache,getPosition(),true);
-            canDash = false;
-        }
         // Jump!
         if (isJumping() && !stoppedJumping) {
             forceCache.set(0, jumpMovement);
             body.applyLinearImpulse(forceCache,getPosition(),true);
+        }
+        if (isDashing() && canDash){
+            float jump = body.getPosition().y;
+            if (isJumping()){
+                jump = (dash_force)+body.getPosition().y;
+            }
+            if(movement > 0){
+                forceCache.set((dash_force)+body.getPosition().x,jump);
+            }
+            else if(movement < 0){
+                forceCache.set((-dash_force)+body.getPosition().x,jump);
+            }
+            else{
+                forceCache.set(body.getPosition().x,jump);
+            }
+            body.setTransform(forceCache,0);
+            if(!isGrounded()){
+                canDash = false;
+            }
         }
     }
 
