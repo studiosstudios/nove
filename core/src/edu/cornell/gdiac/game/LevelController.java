@@ -77,6 +77,8 @@ public class LevelController extends WorldController implements ContactListener 
     private Array<Activator> activatorList;
     private Array<Spikes> spikesList;
 
+    private Array<DeadBody> deadBodyList;
+
     /** hashmap to represent activator-spike relationships:
      *   keys are activator ids specified in JSON*/
     private HashMap<String, Array<Spikes>> activationRelations;
@@ -87,7 +89,7 @@ public class LevelController extends WorldController implements ContactListener 
     private float dheight;
     private Vector2 respawnPos;
     private boolean died;
-    private Cat new_dead_body;
+    private DeadBody new_dead_body;
 
     /**
      * Creates and initialize a new instance of the platformer game
@@ -101,6 +103,7 @@ public class LevelController extends WorldController implements ContactListener 
         setFailure(false);
         activatorList = new Array<Activator>();
         spikesList = new Array<Spikes>();
+        deadBodyList = new Array<DeadBody>();
         activationRelations = new HashMap<String, Array<Spikes>>();
         world.setContactListener(this);
         sensorFixtures = new ObjectSet<Fixture>();
@@ -153,6 +156,7 @@ public class LevelController extends WorldController implements ContactListener 
         world.setContactListener(this);
         setComplete(false);
         setFailure(false);
+        died = false;
         populateLevel();
     }
 
@@ -166,6 +170,7 @@ public class LevelController extends WorldController implements ContactListener 
 
         activatorList.clear();
         spikesList.clear();
+        deadBodyList.clear();
         activationRelations = new HashMap<String, Array<Spikes>>();
 
         JsonValue goal = constants.get("goal");
@@ -317,6 +322,8 @@ public class LevelController extends WorldController implements ContactListener 
             died = false;
             avatar.setPosition(respawnPos);
             addObject(new_dead_body);
+            deadBodyList.add(new_dead_body);
+
         }
 
         return true;
@@ -505,7 +512,7 @@ public class LevelController extends WorldController implements ContactListener 
             setFailure(true);
         } else {
             // create dead body
-            Cat dead_body = new Cat(constants.get("cat"), dwidth, dheight);
+            DeadBody dead_body = new DeadBody(constants.get("cat"), dwidth, dheight);
             dead_body.setDrawScale(scale);
             dead_body.setTexture(avatarTexture);
             dead_body.setSensor(false);
