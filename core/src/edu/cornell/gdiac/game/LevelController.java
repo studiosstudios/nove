@@ -276,7 +276,7 @@ public class LevelController extends WorldController implements ContactListener 
             float x = buttonJV.get("pos").getFloat(0);
             float y = buttonJV.get("pos").getFloat(1);
             String id = buttonJV.getString("id");
-            Button button = new Button(x, y, id, buttonTexture, scale, buttonsJV);
+            TimedButton button = new TimedButton(x, y, id, 120, buttonTexture, scale, buttonsJV);
             activatorList.add(button);
             addObject(button);
         }
@@ -460,20 +460,28 @@ public class LevelController extends WorldController implements ContactListener 
                 setRet(true);
             }
             // Check for death
-            if (!died && ((bd1 == avatar && (fd2 == Spikes.getSensorName() || fd2 == Flame.getSensorName())) ||
-                    (bd2 == avatar && (fd1 == Spikes.getSensorName() || fd1 == Flame.getSensorName())))) {
+            if ((bd1 == avatar && (fd2 == Spikes.getSensorName() || fd2 == Flame.getSensorName())) ||
+                    (bd2 == avatar && (fd1 == Spikes.getSensorName() || fd1 == Flame.getSensorName()))) {
                 die();
             }
 
-            // Check for button
-            if (fd2 instanceof Button) {
-                ((Button) fd2).setPressed(true);
-            } else if (fd1 instanceof Button) {
-                ((Button) fd1).setPressed(true);
+            // Check for activator
+            if (fd2 instanceof Activator) {
+                ((Activator) fd2).addPress();
+            } else if (fd1 instanceof Activator) {
+                ((Activator) fd1).addPress();
             }
         }catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void spikesDeath(DeadBody deadBody, Spikes spikes){
+
+    }
+
+    private void flameDeath(DeadBody deadBody, Flame flame){
+
     }
 
     /**
@@ -508,13 +516,14 @@ public class LevelController extends WorldController implements ContactListener 
         if ((avatar.getSideSensorName().equals(fd2) && avatar != bd1) ||
                 (avatar.getSideSensorName().equals(fd1) && avatar != bd2)) {
             avatar.decrementWalled();
-            // Check for button
-            if (fd2 instanceof Button) {
-                ((Button) fd2).setPressed(false);
-            } else if (fd1 instanceof Button) {
-                ((Button) fd1).setPressed(false);
-            }
         }
+        // Check for button
+        if (fd2 instanceof Activator) {
+            ((Activator) fd2).removePress();
+        } else if (fd1 instanceof Activator) {
+            ((Activator) fd1).removePress();
+        }
+
     }
 
     /** Unused ContactListener method */
@@ -543,25 +552,29 @@ public class LevelController extends WorldController implements ContactListener 
      * Called when a player dies. Removes all input but keeps velocities.
      * TODO: create and return body to be used in preSolve (for fixing to spikes)
      */
-    private void die(){
-        avatar.setJumping(false);
-        died = true;
-        // decrement lives
-        numLives--;
-        // 0 lives
-        if (numLives <= 0) {
-            numLives=MAX_NUM_LIVES;
-            setFailure(true);
-        } else {
-            // create dead body
-            DeadBody dead_body = new DeadBody(constants.get("cat"), dwidth, dheight);
-            dead_body.setDrawScale(scale);
-            dead_body.setTexture(deadCatTexture);
-            dead_body.setSensor(false);
-            dead_body.setLinearVelocity(new Vector2(0,0));
-            dead_body.setPosition(avatar.getPosition());
-            new_dead_body = dead_body;
+    private DeadBody die(){
+        if (!died) {
+            avatar.setJumping(false);
+            died = true;
+            // decrement lives
+            numLives--;
+            // 0 lives
+            if (numLives <= 0) {
+                numLives = MAX_NUM_LIVES;
+                setFailure(true);
+            } else {
+                // create dead body
+                DeadBody dead_body = new DeadBody(constants.get("cat"), dwidth, dheight);
+                dead_body.setDrawScale(scale);
+                dead_body.setTexture(deadCatTexture);
+                dead_body.setSensor(false);
+                dead_body.setLinearVelocity(new Vector2(0, 0));
+                dead_body.setPosition(avatar.getPosition());
+                new_dead_body = dead_body;
+                return dead_body;
+            }
         }
+        return null;
     }
 
 }
