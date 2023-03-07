@@ -15,7 +15,9 @@
         "platform:rope":  "platform/ropebridge.png",
         "platform:barrier": "platform/barrier.png",
         "platform:bullet":  "platform/bullet.png",
-        "platform:spikes": "platform/spikes.png"
+        "platform:spikes": "platform/spikes.png",
+        "platform:flamethrower": "platform/flamethrower.png",
+        "platform:flame": "platform/flame.png"
     },
     "jsons"  : {
         "platform:constants": "platform/constants.json"
