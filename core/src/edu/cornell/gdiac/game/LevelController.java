@@ -45,6 +45,10 @@ public class LevelController extends WorldController implements ContactListener 
     private TextureRegion buttonTexture;
     /** Texture asset for the bridge plank */
     private TextureRegion bridgeTexture;
+    /** Texture asset for the flame of the flamethrower */
+    private TextureRegion flameTexture;
+    /** Texture asset for the base of the flamethrower */
+    private TextureRegion flamethrowerTexture;
 
     /** The jump sound.  We only want to play once. */
     private Sound jumpSound;
@@ -77,6 +81,14 @@ public class LevelController extends WorldController implements ContactListener 
      *   keys are activator ids specified in JSON*/
     private HashMap<String, Array<Spikes>> activationRelations;
 
+    private int numLives;
+    private static final int MAX_NUM_LIVES = 2;
+    private float dwidth;
+    private float dheight;
+    private Vector2 respawnPos;
+    private boolean died;
+    private Cat new_dead_body;
+
     /**
      * Creates and initialize a new instance of the platformer game
      *
@@ -92,6 +104,8 @@ public class LevelController extends WorldController implements ContactListener 
         activationRelations = new HashMap<String, Array<Spikes>>();
         world.setContactListener(this);
         sensorFixtures = new ObjectSet<Fixture>();
+        numLives = MAX_NUM_LIVES;
+        died = false;
     }
 
     /**
@@ -108,6 +122,8 @@ public class LevelController extends WorldController implements ContactListener 
         bridgeTexture = new TextureRegion(directory.getEntry("platform:rope",Texture.class));
         spikesTexture = new TextureRegion(directory.getEntry("platform:spikes", Texture.class));
         buttonTexture = new TextureRegion(directory.getEntry("platform:button", Texture.class));
+        flameTexture = new TextureRegion(directory.getEntry("platform:flame", Texture.class));
+        flamethrowerTexture = new TextureRegion(directory.getEntry("platform:flamethrower", Texture.class));
 
         jumpSound = directory.getEntry( "platform:jump", Sound.class );
         fireSound = directory.getEntry( "platform:pew", Sound.class );
@@ -131,6 +147,7 @@ public class LevelController extends WorldController implements ContactListener 
         objects.clear();
         addQueue.clear();
         world.dispose();
+        numLives = MAX_NUM_LIVES;
 
         world = new World(gravity,false);
         world.setContactListener(this);
@@ -144,8 +161,8 @@ public class LevelController extends WorldController implements ContactListener 
      */
     private void populateLevel() {
         // Add level goal
-        float dwidth  = goalTile.getRegionWidth()/scale.x;
-        float dheight = goalTile.getRegionHeight()/scale.y;
+        dwidth  = goalTile.getRegionWidth()/scale.x;
+        dheight = goalTile.getRegionHeight()/scale.y;
 
         activatorList.clear();
         spikesList.clear();
@@ -197,14 +214,6 @@ public class LevelController extends WorldController implements ContactListener 
 
         // This world is heavier
         world.setGravity( new Vector2(0,defaults.getFloat("gravity",0)) );
-
-        // Create dude
-        dwidth  = avatarTexture.getRegionWidth()/scale.x;
-        dheight = avatarTexture.getRegionHeight()/scale.y;
-        avatar = new Cat(constants.get("cat"), dwidth, dheight);
-        avatar.setDrawScale(scale);
-        avatar.setTexture(avatarTexture);
-        addObject(avatar);
 
         // Create rope bridge
 //        dwidth  = bridgeTexture.getRegionWidth()/scale.x;
@@ -268,6 +277,19 @@ public class LevelController extends WorldController implements ContactListener 
         addObject(box);
 
         volume = constants.getFloat("volume", 1.0f);
+
+        // Create flamethrower
+        Flamethrower flamethrower = new Flamethrower(constants.get("flamethrower"),24.0f, 3.8f, 0f, scale, flamethrowerTexture, flameTexture);
+        addObject(flamethrower);
+
+        // Create dude
+        dwidth  = avatarTexture.getRegionWidth()/scale.x;
+        dheight = avatarTexture.getRegionHeight()/scale.y;
+        avatar = new Cat(constants.get("cat"), dwidth, dheight);
+        avatar.setDrawScale(scale);
+        avatar.setTexture(avatarTexture);
+        respawnPos = avatar.getPosition();
+        addObject(avatar);
     }
 
     /**
@@ -289,6 +311,12 @@ public class LevelController extends WorldController implements ContactListener 
         if (!isFailure() && avatar.getY() < -1) {
             setFailure(true);
             return false;
+        }
+
+        if (!isFailure() && died) {
+            died = false;
+            avatar.setPosition(respawnPos);
+            addObject(new_dead_body);
         }
 
         return true;
@@ -389,9 +417,11 @@ public class LevelController extends WorldController implements ContactListener 
             }
 
             // Check for death
-            if ((bd1 == avatar && fd2 == Spikes.getSensorName()) ||
-                    (bd2 == avatar && fd1 == Spikes.getSensorName())){
+            if ((bd1 == avatar && (fd2 == Spikes.getSensorName() || fd2 == Flame.getSensorName())) ||
+                    (bd2 == avatar && (fd1 == Spikes.getSensorName() || fd1 == Flame.getSensorName()))){
                 die();
+//            } else {
+//                died = false;
             }
 
             // Check for button
@@ -465,6 +495,24 @@ public class LevelController extends WorldController implements ContactListener 
      */
     private void die(){
         avatar.setJumping(false);
-        setFailure(true);
+        died = true;
+        // decrement lives
+        numLives--;
+
+        // 0 lives
+        if (numLives <= 0) {
+            numLives=MAX_NUM_LIVES;
+            setFailure(true);
+        } else {
+            // create dead body
+            Cat dead_body = new Cat(constants.get("cat"), dwidth, dheight);
+            dead_body.setDrawScale(scale);
+            dead_body.setTexture(avatarTexture);
+            dead_body.setSensor(false);
+            dead_body.setLinearVelocity(new Vector2(0,0));
+            dead_body.setPosition(avatar.getPosition());
+            new_dead_body = dead_body;
+        }
     }
+
 }

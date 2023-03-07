@@ -300,7 +300,7 @@ public class Cat extends CapsuleObstacle {
             forceCache.set(getMovement(),0);
             body.applyForce(forceCache,getPosition(),true);
         }
-        if (isDashing() && canDash){
+        if (isDashing() && canDash && isJumping()){
             if(movement > 0){
                 forceCache.set(dash_force,dash_force);
             }
