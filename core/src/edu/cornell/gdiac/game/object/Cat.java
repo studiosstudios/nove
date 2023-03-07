@@ -14,6 +14,7 @@ import com.badlogic.gdx.math.*;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.physics.box2d.*;
 
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.JsonValue;
 import edu.cornell.gdiac.game.*;
 import edu.cornell.gdiac.game.obstacle.*;
@@ -39,7 +40,9 @@ public class Cat extends CapsuleObstacle {
     /** The maximum character speed */
     private final float maxspeed;
     /** Identifier to allow us to track the sensor in ContactListener */
-    private final String sensorName;
+    private final String groundSensorName;
+    /** Identifier to allow us to track side sensor in ContactListener */
+    private final String sideSensorName;
     /** The impulse for the character jump */
     private final float jump_force;
     /** Damping multiplier to slow down jump */
@@ -57,8 +60,11 @@ public class Cat extends CapsuleObstacle {
     private boolean stoppedJumping;
     /** Whether our feet are on the ground */
     private boolean isGrounded;
-    /** The physics shape of this object */
-    private PolygonShape sensorShape;
+    /** Whether we are climbing on a wall */
+    private boolean isClimbing;
+
+    /** List of shapes corresponding to the sensors attached to this body */
+    private Array<PolygonShape> sensorShapes;
 
     /** Cache for internal force calculations */
     private final Vector2 forceCache = new Vector2();
@@ -119,6 +125,15 @@ public class Cat extends CapsuleObstacle {
         if (!isJumping && !isGrounded()){
             stoppedJumping = true;
         }
+    }
+
+    /**
+     * Sets whether the cat is actively climbing
+     *
+     * @param value whether the cat is actively climbing
+     */
+    private void setClimbing(boolean value) {
+        isClimbing = value;
     }
 
 
@@ -183,9 +198,26 @@ public class Cat extends CapsuleObstacle {
      *
      * @return the name of the ground sensor
      */
-    public String getSensorName() {
-        return sensorName;
+    public String getGroundSensorName() {
+        return groundSensorName;
     }
+
+    /**
+     * Returns the name of the side sensor
+     *
+     * This is used by ContactListener
+     *
+     * @return the name of the side sensor
+     */
+    public String getSideSensorName() {
+        return sideSensorName;
+    }
+
+    /**
+     * Whether the cat is currently climbing
+     * @return Whether the cat is currently climbing
+     */
+    public boolean getIsClimbing() { return isClimbing; }
 
     /**
      * Returns true if this character is facing right
@@ -224,7 +256,9 @@ public class Cat extends CapsuleObstacle {
         jump_force = data.getFloat( "jump_force", 0 );
         dash_force = data.getFloat( "dash_force", 0 );;
         jumpDamping = data.getFloat("jump_damping", 0);
-        sensorName = "catGroundSensor";
+        groundSensorName = "catGroundSensor";
+        sideSensorName = "catSideSensor";
+        sensorShapes = new Array<>();
         this.data = data;
 
         // Gameplay attributes
@@ -260,21 +294,50 @@ public class Cat extends CapsuleObstacle {
         // To determine whether or not the cat is on the ground,
         // we create a thin sensor under his feet, which reports
         // collisions with the world but has no collision response.
-        Vector2 sensorCenter = new Vector2(0, -getHeight() / 2);
-        FixtureDef sensorDef = new FixtureDef();
-        sensorDef.density = data.getFloat("density",0);
-        sensorDef.isSensor = true;
-        sensorShape = new PolygonShape();
-        JsonValue sensorjv = data.get("sensor");
-        sensorShape.setAsBox(sensorjv.getFloat("shrink",0)*getWidth()/2.0f,
-                sensorjv.getFloat("height",0), sensorCenter, 0.0f);
-        sensorDef.shape = sensorShape;
+        JsonValue groundSensorJV = data.get("ground_sensor");
+        Fixture a = generateSensor( new Vector2(0, -getHeight() / 2),
+                        groundSensorJV.getFloat("shrink",0)*getWidth()/2.0f,
+                        groundSensorJV.getFloat("height",0),
+                        getGroundSensorName() );
 
-        // Ground sensor to represent our feet
-        Fixture sensorFixture = body.createFixture( sensorDef );
-        sensorFixture.setUserData(getSensorName());
+        // Side sensors to help detect for wall climbing
+        JsonValue sideSensorJV = data.get("side_sensor");
+        Fixture b= generateSensor( new Vector2(-getWidth() / 2, 0),
+                        sideSensorJV.getFloat("width", 0),
+                        sideSensorJV.getFloat("shrink") * getHeight() / 2.0f,
+                        getSideSensorName() );
+
+        generateSensor( new Vector2(getWidth() / 2, 0),
+                        sideSensorJV.getFloat("width", 0),
+                        sideSensorJV.getFloat("shrink") * getHeight() / 2.0f,
+                        getSideSensorName() );
 
         return true;
+    }
+
+    /**
+     * Generates a sensor fixture to be used on the Cat.
+     *
+     * We set friction to 0 to ensure fixture has no physical effects.
+     *
+     * @param location relative location of the sensor fixture
+     * @param hx half-width used for PolygonShape
+     * @param hy half-height used for PolygonShape
+     * @param name name for the sensor UserData
+     * @return
+     */
+    private Fixture generateSensor(Vector2 location, float hx, float hy, String name) {
+        FixtureDef sensorDef = new FixtureDef();
+        sensorDef.friction = 0;
+        sensorDef.isSensor = true;
+        PolygonShape sensorShape = new PolygonShape();
+        sensorShape.setAsBox(hx, hy, location, 0.0f);
+        sensorDef.shape = sensorShape;
+
+        Fixture sensorFixture = body.createFixture( sensorDef );
+        sensorFixture.setUserData(name);
+        sensorShapes.add(sensorShape);
+        return sensorFixture;
     }
 
 
@@ -357,6 +420,9 @@ public class Cat extends CapsuleObstacle {
      */
     public void drawDebug(GameCanvas canvas) {
         super.drawDebug(canvas);
-        canvas.drawPhysics(sensorShape,Color.RED,getX(),getY(),getAngle(),drawScale.x,drawScale.y);
+        for (PolygonShape shape : sensorShapes) {
+            canvas.drawPhysics(shape,Color.RED,getX(),getY(),getAngle(),drawScale.x,drawScale.y);
+        }
+
     }
 }
