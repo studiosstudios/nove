@@ -52,6 +52,10 @@ public class InputController {
 	/** Whether the dash button was pressed. */
 	private boolean dashPressed;
 	private boolean dashPrevious;
+
+	/** Whether the climb button was pressed. */
+	private boolean climbPressed;
+
 	/** Whether the secondary action button was pressed. */
 	private boolean secondPressed;
 	private boolean secondPrevious;
@@ -131,6 +135,14 @@ public class InputController {
 	 * @return true if the dash button was pressed.
 	 */
 	public boolean didDash() { return dashPressed && !dashPrevious;}
+
+	/**
+	 * Returns true if the climb button was pressed.
+	 *
+	 * @return true if the climb button was pressed.
+	 */
+	public boolean didClimb() { return climbPressed; }
+
 	/**
 	 * Returns true if the secondary action button was pressed.
 	 *
@@ -226,11 +238,12 @@ public class InputController {
 	 */
 	private void readKeyboard(Rectangle bounds, Vector2 scale) {
 		// Give priority to gamepad results
-		dashPressed = (Gdx.input.isKeyPressed(Input.Keys.D));
 		resetPressed = (Gdx.input.isKeyPressed(Input.Keys.R));
 		debugPressed = (Gdx.input.isKeyPressed(Input.Keys.B));
 		primePressed = (Gdx.input.isKeyPressed(Input.Keys.UP));
-//		secondPressed = (Gdx.input.isKeyPressed(Input.Keys.SPACE));
+		secondPressed = (Gdx.input.isKeyPressed(Input.Keys.SPACE));
+		dashPressed = (Gdx.input.isKeyPressed(Input.Keys.D));
+		climbPressed = (Gdx.input.isKeyPressed(Input.Keys.A));
 		exitPressed  = (Gdx.input.isKeyPressed(Input.Keys.ESCAPE));
 
 		// Directional controls

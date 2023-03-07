@@ -50,6 +50,8 @@ public class Cat extends CapsuleObstacle {
 
     /** The current horizontal movement of the character */
     private float   movement;
+    /** The current vertical movement of the character */
+    private float   verticalMovement;
     /** Current jump movement of the character */
     private float   jumpMovement;
     /** Which direction is the character facing */
@@ -60,6 +62,9 @@ public class Cat extends CapsuleObstacle {
     private boolean stoppedJumping;
     /** Whether our feet are on the ground */
     private boolean isGrounded;
+
+    /** Whether we are in contact with a wall */
+    private int wallCount;
     /** Whether we are climbing on a wall */
     private boolean isClimbing;
 
@@ -97,9 +102,30 @@ public class Cat extends CapsuleObstacle {
             faceRight = true;
         }
     }
-    public void setDashing(boolean value){
-        isDashing = value;
+
+    /**
+     * Returns up/down movement of this character.
+     *
+     * This is the result of input times cat force.
+     *
+     * @return up/down movement of this character.
+     */
+    public float getVerticalMovement() {
+        return verticalMovement;
     }
+
+    /**
+     * Sets up/down movement of this character.
+     *
+     * This is the result of input times cat force.
+     *
+     * @param value up/down movement of this character.
+     */
+    public void setVerticalMovement(float value) {
+        verticalMovement = value;
+    }
+    public void setDashing(boolean value){ isDashing = value; }
+
     public boolean isDashing(){
         return isDashing;
     }
@@ -128,11 +154,40 @@ public class Cat extends CapsuleObstacle {
     }
 
     /**
+     * Sets whether the cat is in contact with a wall
+     */
+    public void incrementWalled() {
+//        System.out.println("Walled: " + value);
+        wallCount++;
+    }
+
+    /**
+     * Sets whether the cat is in contact with a wall
+     */
+    public void decrementWalled() {
+        wallCount--;
+    }
+
+    /**
+     * Whether the cat is in contact with a wall
+     * @return whether the cat is in contact with a wall
+     */
+    public boolean isWalled() { return wallCount > 0; }
+
+    /**
      * Sets whether the cat is actively climbing
      *
      * @param value whether the cat is actively climbing
      */
-    private void setClimbing(boolean value) {
+    public void setClimbing(boolean value) {
+        if (value && !isClimbing) {
+            System.out.println("Started climbing");
+            body.setGravityScale(0);
+        }
+        else if (!value && isClimbing) {
+            System.out.println("Stopped climbing");
+            body.setGravityScale(1);
+        }
         isClimbing = value;
     }
 
@@ -355,14 +410,27 @@ public class Cat extends CapsuleObstacle {
             forceCache.set(-getDamping()*getVX(),0);
             body.applyForce(forceCache,getPosition(),true);
         }
+        if (getVerticalMovement() == 0f && getIsClimbing()) {
+            forceCache.set(0,-getDamping()*getVY());
+            body.applyForce(forceCache,getPosition(),true);
+        }
 
         // Velocity too high, clamp it
         if (Math.abs(getVX()) >= getMaxSpeed()) {
             setVX(Math.signum(getMovement())*getMaxSpeed());
         } else {
-            forceCache.set(getMovement(),0);
+            forceCache.set(getMovement() * 0.5f,0);
             body.applyForce(forceCache,getPosition(),true);
         }
+        if (getIsClimbing()) {
+            if (Math.abs(getVY()) >= getMaxSpeed()) {
+                setVY(Math.signum(getVerticalMovement())*getMaxSpeed());
+            } else {
+                forceCache.set(0, getVerticalMovement());
+                body.applyForce(forceCache,getPosition(),true);
+            }
+        }
+
         if (isDashing() && canDash && isJumping()){
             if(movement > 0){
                 forceCache.set(dash_force,dash_force);

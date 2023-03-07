@@ -280,9 +280,11 @@ public class LevelController extends WorldController implements ContactListener 
      */
     public void update(float dt) {
         // Process actions in object model
-        avatar.setMovement(InputController.getInstance().getHorizontal() *avatar.getForce());
+        avatar.setMovement(InputController.getInstance().getHorizontal() *avatar.getForce() * (avatar.getIsClimbing() ? 0 : 1));
+        avatar.setVerticalMovement(InputController.getInstance().getVertical() * avatar.getForce());
         avatar.setJumping(InputController.getInstance().didPrimary());
         avatar.setDashing(InputController.getInstance().didDash());
+        avatar.setClimbing(InputController.getInstance().didClimb() && avatar.isWalled());
         // Add a bullet if we fire
         if (avatar.isDashing()) {
             dash();
@@ -346,6 +348,12 @@ public class LevelController extends WorldController implements ContactListener 
                 sensorFixtures.add(avatar == bd1 ? fix2 : fix1); // Could have more than one ground
             }
 
+            // See if we are touching a wall
+            if ((avatar.getSideSensorName().equals(fd2) && avatar != bd1) ||
+                    (avatar.getSideSensorName().equals(fd1) && avatar != bd2)) {
+                avatar.incrementWalled();
+            }
+
             // Check for win condition
             if ((bd1 == avatar   && bd2 == goalDoor) ||
                     (bd1 == goalDoor && bd2 == avatar)) {
@@ -391,6 +399,12 @@ public class LevelController extends WorldController implements ContactListener 
             if (sensorFixtures.size == 0) {
                 avatar.setGrounded(false);
             }
+        }
+
+        // Not handling case where there may be multiple walls at once
+        if ((avatar.getSideSensorName().equals(fd2) && avatar != bd1) ||
+                (avatar.getSideSensorName().equals(fd1) && avatar != bd2)) {
+            avatar.decrementWalled();
         }
     }
 
