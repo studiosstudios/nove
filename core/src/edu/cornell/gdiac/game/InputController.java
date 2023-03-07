@@ -51,6 +51,9 @@ public class InputController {
 	private boolean primePrevious;
 	/** Whether the dash button was pressed. */
 	private boolean dashPressed;
+	/** Whether the meow button was pressed. */
+	private boolean meowPressed;
+	private boolean meowPrevious;
 	private boolean dashPrevious;
 	/** Whether the secondary action button was pressed. */
 	private boolean secondPressed;
@@ -180,6 +183,15 @@ public class InputController {
 	public boolean didExit() {
 		return exitPressed && !exitPrevious;
 	}
+
+	/**
+	 * Returns true if the meow button was pressed.
+	 *
+	 * @return true if the meow button was pressed.
+	 */
+	public boolean didMeow() {
+		return meowPressed && !meowPrevious;
+	}
 	
 	/**
 	 * Creates a new input controller
@@ -212,6 +224,7 @@ public class InputController {
 		resetPrevious  = resetPressed;
 		debugPrevious  = debugPressed;
 		exitPrevious = exitPressed;
+		meowPrevious = meowPressed;
 		
 		readKeyboard(bounds, scale);
 	}
@@ -232,6 +245,7 @@ public class InputController {
 		primePressed = (Gdx.input.isKeyPressed(Input.Keys.UP));
 //		secondPressed = (Gdx.input.isKeyPressed(Input.Keys.SPACE));
 		exitPressed  = (Gdx.input.isKeyPressed(Input.Keys.ESCAPE));
+		meowPressed = (Gdx.input.isKeyPressed(Input.Keys.M));
 
 		// Directional controls
 		horizontal = 0.0f;

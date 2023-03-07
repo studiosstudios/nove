@@ -82,7 +82,7 @@
 		"friction" : 0.9,
 		"mass" : 200,
 		"boxes" : [
-			{"pos" :  [2, 4]}
+			{"pos" :  [7.5, 4]}
 		]
 	},
 	"flamethrower": {

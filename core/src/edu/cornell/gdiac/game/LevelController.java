@@ -59,6 +59,10 @@ public class LevelController extends WorldController implements ContactListener 
     /** The weapon pop sound.  We only want to play once. */
     private Sound plopSound;
     private long plopId = -1;
+
+    /** The meow sound.  We only want to play once. */
+    private Sound meowSound;
+    private long meowId = -1;
     /** The default sound volume */
     private float volume;
 
@@ -140,6 +144,7 @@ public class LevelController extends WorldController implements ContactListener 
         jumpSound = directory.getEntry( "platform:jump", Sound.class );
         fireSound = directory.getEntry( "platform:pew", Sound.class );
         plopSound = directory.getEntry( "platform:plop", Sound.class );
+        meowSound = directory.getEntry( "platform:meow", Sound.class );
 
         switch(level) {
             case 1:
@@ -383,6 +388,10 @@ public class LevelController extends WorldController implements ContactListener 
             jumpId = playSound( jumpSound, jumpId, volume );
         }
 
+        if (InputController.getInstance().didMeow()){
+            meowId = playSound(meowSound, meowId, volume);
+        }
+
         // Process buttons
         for (Activator a : activatorList){
             a.updateActivated();
@@ -505,6 +514,7 @@ public class LevelController extends WorldController implements ContactListener 
         jumpSound.stop(jumpId);
         plopSound.stop(plopId);
         fireSound.stop(fireId);
+        meowSound.stop(meowId);
     }
 
     /**
