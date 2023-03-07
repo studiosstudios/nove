@@ -27,11 +27,6 @@ import edu.cornell.gdiac.util.*;
  * a controller via the new XBox360Controller class.
  */
 public class InputController {
-	// Sensitivity for moving crosshair with gameplay
-	private static final float GP_ACCELERATE = 1.0f;
-	private static final float GP_MAX_SPEED  = 10.0f;
-	private static final float GP_THRESHOLD  = 0.01f;
-
 	/** The singleton instance of the input controller */
 	private static InputController theController = null;
 	
@@ -77,11 +72,6 @@ public class InputController {
 	private Vector2 crosshair;
 	/** The crosshair cache (for using as a return value) */
 	private Vector2 crosscache;
-	/** For the gamepad crosshair control */
-	private float momentum;
-	
-	/** An X-Box controller (if it is connected) */
-	XBoxController xbox;
 	
 	/**
 	 * Returns the amount of sideways movement. 
@@ -129,7 +119,8 @@ public class InputController {
 	 * @return true if the primary action button was pressed.
 	 */
 	public boolean didPrimary() {
-		return primePressed && !primePrevious;
+//		return primePressed && !primePrevious;
+		return primePressed;
 	}
 	/**
 	 * Returns true if the dash button was pressed.
@@ -198,12 +189,6 @@ public class InputController {
 	 */
 	public InputController() {
 		// If we have a game-pad for id, then use it.
-		Array<XBoxController> controllers = Controllers.get().getXBoxControllers();
-		if (controllers.size > 0) {
-			xbox = controllers.get( 0 );
-		} else {
-			xbox = null;
-		}
 		crosshair = new Vector2();
 		crosscache = new Vector2();
 	}
@@ -228,49 +213,7 @@ public class InputController {
 		debugPrevious  = debugPressed;
 		exitPrevious = exitPressed;
 		
-		// Check to see if a GamePad is connected
-		if (xbox != null && xbox.isConnected()) {
-			readGamepad(bounds, scale);
-			readKeyboard(bounds, scale, true); // Read as a back-up
-		} else {
-			readKeyboard(bounds, scale, false);
-		}
-	}
-
-	/**
-	 * Reads input from an X-Box controller connected to this computer.
-	 *
-	 * The method provides both the input bounds and the drawing scale.  It needs
-	 * the drawing scale to convert screen coordinates to world coordinates.  The
-	 * bounds are for the crosshair.  They cannot go outside of this zone.
-	 *
-	 * @param bounds The input bounds for the crosshair.  
-	 * @param scale  The drawing scale
-	 */
-	private void readGamepad(Rectangle bounds, Vector2 scale) {
-		resetPressed = xbox.getStart();
-		exitPressed  = xbox.getBack();
-		primePressed = xbox.getA();
-		debugPressed  = xbox.getY();
-
-		// Increase animation frame, but only if trying to move
-		horizontal = xbox.getLeftX();
-		vertical   = xbox.getLeftY();
-		secondPressed = xbox.getRightTrigger() > 0.6f;
-		
-		// Move the crosshairs with the right stick.
-		tertiaryPressed = xbox.getA();
-		crosscache.set(xbox.getLeftX(), xbox.getLeftY());
-		if (crosscache.len2() > GP_THRESHOLD) {
-			momentum += GP_ACCELERATE;
-			momentum = Math.min(momentum, GP_MAX_SPEED);
-			crosscache.scl(momentum);
-			crosscache.scl(1/scale.x,1/scale.y);
-			crosshair.add(crosscache);
-		} else {
-			momentum = 0;
-		}
-		clampPosition(bounds);
+		readKeyboard(bounds, scale);
 	}
 
 	/**
@@ -280,29 +223,26 @@ public class InputController {
 	 * controller is connected.  However, if a controller is connected, this method
 	 * gives priority to the X-Box controller.
 	 *
-	 * @param secondary true if the keyboard should give priority to a gamepad
 	 */
-	private void readKeyboard(Rectangle bounds, Vector2 scale, boolean secondary) {
+	private void readKeyboard(Rectangle bounds, Vector2 scale) {
 		// Give priority to gamepad results
-		resetPressed = (secondary && resetPressed) || (Gdx.input.isKeyPressed(Input.Keys.R));
-		debugPressed = (secondary && debugPressed) || (Gdx.input.isKeyPressed(Input.Keys.B));
-		primePressed = (secondary && primePressed) || (Gdx.input.isKeyPressed(Input.Keys.UP));
-		secondPressed = (secondary && secondPressed) || (Gdx.input.isKeyPressed(Input.Keys.SPACE));
-		dashPressed = (secondary && dashPressed)||(Gdx.input.isKeyPressed(Input.Keys.D));
-//		prevPressed = (secondary && prevPressed) || (Gdx.input.isKeyPressed(Input.Keys.P));
-//		nextPressed = (secondary && nextPressed) || (Gdx.input.isKeyPressed(Input.Keys.N));
-		exitPressed  = (secondary && exitPressed) || (Gdx.input.isKeyPressed(Input.Keys.ESCAPE));
-		
+		dashPressed = (Gdx.input.isKeyPressed(Input.Keys.D));
+		resetPressed = (Gdx.input.isKeyPressed(Input.Keys.R));
+		debugPressed = (Gdx.input.isKeyPressed(Input.Keys.D));
+		primePressed = (Gdx.input.isKeyPressed(Input.Keys.UP));
+//		secondPressed = (Gdx.input.isKeyPressed(Input.Keys.SPACE));
+		exitPressed  = (Gdx.input.isKeyPressed(Input.Keys.ESCAPE));
+
 		// Directional controls
-		horizontal = (secondary ? horizontal : 0.0f);
+		horizontal = 0.0f;
 		if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
 			horizontal += 1.0f;
 		}
 		if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
 			horizontal -= 1.0f;
 		}
-		
-		vertical = (secondary ? vertical : 0.0f);
+
+		vertical = 0.0f;
 		if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
 			vertical += 1.0f;
 		}
@@ -311,7 +251,7 @@ public class InputController {
 		}
 		
 		// Mouse results
-        tertiaryPressed = Gdx.input.isButtonPressed(Input.Buttons.LEFT);
+        	tertiaryPressed = Gdx.input.isButtonPressed(Input.Buttons.LEFT);
 		crosshair.set(Gdx.input.getX(), Gdx.input.getY());
 		crosshair.scl(1/scale.x,-1/scale.y);
 		crosshair.y += bounds.height;

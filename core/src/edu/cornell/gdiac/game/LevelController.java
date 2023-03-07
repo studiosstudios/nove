@@ -35,8 +35,7 @@ public class LevelController extends WorldController implements ContactListener 
     private TextureRegion avatarTexture;
     /** Texture asset for the spinning barrier */
     private TextureRegion barrierTexture;
-    /** Texture asset for the bullet */
-    private TextureRegion bulletTexture;
+
     /** Texture asset for the spikes */
     private TextureRegion spikesTexture;
     /** Texture asset for the bridge plank */
@@ -90,7 +89,6 @@ public class LevelController extends WorldController implements ContactListener 
     public void gatherAssets(AssetDirectory directory) {
         avatarTexture  = new TextureRegion(directory.getEntry("platform:cat",Texture.class));
         barrierTexture = new TextureRegion(directory.getEntry("platform:barrier",Texture.class));
-        bulletTexture = new TextureRegion(directory.getEntry("platform:bullet",Texture.class));
         bridgeTexture = new TextureRegion(directory.getEntry("platform:rope",Texture.class));
         spikesTexture = new TextureRegion(directory.getEntry("platform:spikes", Texture.class));
 
@@ -256,48 +254,18 @@ public class LevelController extends WorldController implements ContactListener 
         // Process actions in object model
         avatar.setMovement(InputController.getInstance().getHorizontal() *avatar.getForce());
         avatar.setJumping(InputController.getInstance().didPrimary());
-        avatar.setShooting(InputController.getInstance().didSecondary());
         avatar.setDashing(InputController.getInstance().didDash());
         // Add a bullet if we fire
-        if (avatar.isShooting()) {
-            createBullet();
-        }
         if (avatar.isDashing()) {
             dash();
         }
         avatar.applyForce();
-        if (avatar.isJumping()) {
+        if (avatar.isJumping() && avatar.isGrounded()) {
             jumpId = playSound( jumpSound, jumpId, volume );
         }
     }
     private void dash(){
         avatar.getPosition();
-    }
-
-    /**
-     * Add a new bullet to the world and send it in the right direction.
-     */
-    private void createBullet() {
-        JsonValue bulletjv = constants.get("bullet");
-        float offset = bulletjv.getFloat("offset",0);
-        offset *= (avatar.isFacingRight() ? 1 : -1);
-        float radius = bulletTexture.getRegionWidth()/(2.0f*scale.x);
-        WheelObstacle bullet = new WheelObstacle(avatar.getX()+offset, avatar.getY(), radius);
-
-        bullet.setName("bullet");
-        bullet.setDensity(bulletjv.getFloat("density", 0));
-        bullet.setDrawScale(scale);
-        bullet.setTexture(bulletTexture);
-        bullet.setBullet(true);
-        bullet.setGravityScale(0);
-
-        // Compute position and velocity
-        float speed = bulletjv.getFloat( "speed", 0 );
-        speed  *= (avatar.isFacingRight() ? 1 : -1);
-        bullet.setVX(speed);
-        addQueuedObject(bullet);
-
-        fireId = playSound( fireSound, fireId );
     }
 
     /**
@@ -419,7 +387,6 @@ public class LevelController extends WorldController implements ContactListener 
      */
     private void die(){
         avatar.setJumping(false);
-        avatar.setShooting(false);
         setFailure(true);
     }
 }

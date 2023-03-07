@@ -42,25 +42,21 @@ public class Cat extends CapsuleObstacle {
     private final String sensorName;
     /** The impulse for the character jump */
     private final float jump_force;
-    /** Cooldown (in animation frames) for jumping */
-    private final int jumpLimit;
-    /** Cooldown (in animation frames) for shooting */
-    private final int shotLimit;
+    /** Damping multiplier to slow down jump */
+    private final float jumpDamping;
 
     /** The current horizontal movement of the character */
     private float   movement;
+    /** Current jump movement of the character */
+    private float   jumpMovement;
     /** Which direction is the character facing */
     private boolean faceRight;
-    /** How long until we can jump again */
-    private int jumpCooldown;
     /** Whether we are actively jumping */
     private boolean isJumping;
-    /** How long until we can shoot again */
-    private int shootCooldown;
+    /** Whether we stopped jumping in air */
+    private boolean stoppedJumping;
     /** Whether our feet are on the ground */
     private boolean isGrounded;
-    /** Whether we are actively shooting */
-    private boolean isShooting;
     /** The physics shape of this object */
     private PolygonShape sensorShape;
 
@@ -102,30 +98,12 @@ public class Cat extends CapsuleObstacle {
         return isDashing;
     }
     /**
-     * Returns true if the cat is actively firing.
-     *
-     * @return true if the cat is actively firing.
-     */
-    public boolean isShooting() {
-        return isShooting && shootCooldown <= 0;
-    }
-
-    /**
-     * Sets whether the cat is actively firing.
-     *
-     * @param value whether the cat is actively firing.
-     */
-    public void setShooting(boolean value) {
-        isShooting = value;
-    }
-
-    /**
      * Returns true if the cat is actively jumping.
      *
      * @return true if the cat is actively jumping.
      */
     public boolean isJumping() {
-        return isJumping && isGrounded && jumpCooldown <= 0;
+        return isJumping;
     }
 
     /**
@@ -135,7 +113,14 @@ public class Cat extends CapsuleObstacle {
      */
     public void setJumping(boolean value) {
         isJumping = value;
+        if (isJumping) {
+            jumpMovement *= jumpDamping;
+        }
+        if (!isJumping && !isGrounded()){
+            stoppedJumping = true;
+        }
     }
+
 
     /**
      * Returns true if the cat is on the ground.
@@ -153,8 +138,10 @@ public class Cat extends CapsuleObstacle {
      */
     public void setGrounded(boolean value) {
         isGrounded = value;
-        if(isGrounded){
+        if (isGrounded) {
             canDash = true;
+            jumpMovement = jump_force;
+            stoppedJumping = false;
         }
     }
 
@@ -225,7 +212,8 @@ public class Cat extends CapsuleObstacle {
         super(	data.get("pos").getFloat(0),
                 data.get("pos").getFloat(1),
                 width*data.get("shrink").getFloat( 0 ),
-                height*data.get("shrink").getFloat( 1 ));
+                height*data.get("shrink").getFloat( 1 ),
+                Orientation.TOP);
         setDensity(data.getFloat("density", 0));
         setFriction(data.getFloat("friction", 0));  /// HE WILL STICK TO WALLS IF YOU FORGET
         setFixedRotation(true);
@@ -235,21 +223,17 @@ public class Cat extends CapsuleObstacle {
         force = data.getFloat("force", 0);
         jump_force = data.getFloat( "jump_force", 0 );
         dash_force = data.getFloat( "dash_force", 0 );;
-        jumpLimit = data.getInt( "jump_cool", 0 );
-        shotLimit = data.getInt( "shot_cool", 0 );
+        jumpDamping = data.getFloat("jump_damping", 0);
         sensorName = "catGroundSensor";
         this.data = data;
 
         // Gameplay attributes
         isGrounded = false;
-        isShooting = false;
-        isDashing = false;
+        canDash = true;
         isJumping = false;
         faceRight = true;
-        canDash = true;
+        stoppedJumping = false;
 
-        shootCooldown = 0;
-        jumpCooldown = 0;
         setName("cat");
     }
 
@@ -303,7 +287,6 @@ public class Cat extends CapsuleObstacle {
         if (!isActive()) {
             return;
         }
-
         // Don't want to be moving. Damp out player motion
         if (getMovement() == 0f) {
             forceCache.set(-getDamping()*getVX(),0);
@@ -312,7 +295,7 @@ public class Cat extends CapsuleObstacle {
 
         // Velocity too high, clamp it
         if (Math.abs(getVX()) >= getMaxSpeed()) {
-            setVX(Math.signum(getVX())*getMaxSpeed());
+            setVX(Math.signum(getMovement())*getMaxSpeed());
         } else {
             forceCache.set(getMovement(),0);
             body.applyForce(forceCache,getPosition(),true);
@@ -331,8 +314,8 @@ public class Cat extends CapsuleObstacle {
             canDash = false;
         }
         // Jump!
-        if (isJumping()) {
-            forceCache.set(0, jump_force);
+        if (isJumping() && !stoppedJumping) {
+            forceCache.set(0, jumpMovement);
             body.applyLinearImpulse(forceCache,getPosition(),true);
         }
     }
@@ -346,17 +329,11 @@ public class Cat extends CapsuleObstacle {
      */
     public void update(float dt) {
         // Apply cooldowns
-        if (isJumping()) {
-            jumpCooldown = jumpLimit;
-        } else {
-            jumpCooldown = Math.max(0, jumpCooldown - 1);
-        }
-
-        if (isShooting()) {
-            shootCooldown = shotLimit;
-        } else {
-            shootCooldown = Math.max(0, shootCooldown - 1);
-        }
+//        if (isJumping()) {
+//            jumpCooldown = jumpLimit;
+//        } else {
+//            jumpCooldown = Math.max(0, jumpCooldown - 1);
+//        }
 
         super.update(dt);
     }
