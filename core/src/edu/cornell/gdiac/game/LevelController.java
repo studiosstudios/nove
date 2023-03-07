@@ -245,7 +245,6 @@ public class LevelController extends WorldController implements ContactListener 
         }
 
         if (!isFailure() && avatar.getY() < -1) {
-//            avatar.setBodyType(BodyDef.BodyType.StaticBody);
             setFailure(true);
             return false;
         }
@@ -414,6 +413,7 @@ public class LevelController extends WorldController implements ContactListener 
 
         // 0 lives
         if (numLives <= 0) {
+            numLives=MAX_NUM_LIVES;
             setFailure(true);
         } else {
             // create dead body
