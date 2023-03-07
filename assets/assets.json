@@ -16,7 +16,7 @@
         "platform:barrier": "platform/barrier.png",
         "platform:bullet":  "platform/bullet.png",
         "platform:spikes": "platform/spikes.png",
-        "platform:button": "platform/button.png"
+        "platform:button": "platform/button.png",
         "platform:flamethrower": "platform/flamethrower.png",
         "platform:flame": "platform/flame.png"
     },
