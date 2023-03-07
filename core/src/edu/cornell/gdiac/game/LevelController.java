@@ -51,6 +51,8 @@ public class LevelController extends WorldController implements ContactListener 
     private TextureRegion flamethrowerTexture;
     /** Texture asset for the dead cat */
     private TextureRegion deadCatTexture;
+    /** Texture asset for the dead cat */
+    private TextureRegion backgroundTexture;
 
     /** The jump sound.  We only want to play once. */
     private Sound jumpSound;
@@ -143,11 +145,14 @@ public class LevelController extends WorldController implements ContactListener 
         flameTexture = new TextureRegion(directory.getEntry("platform:flame", Texture.class));
         flamethrowerTexture = new TextureRegion(directory.getEntry("platform:flamethrower", Texture.class));
         deadCatTexture = new TextureRegion((directory.getEntry("platform:deadCat", Texture.class)));
+        backgroundTexture = new TextureRegion((directory.getEntry("platform:background", Texture.class)));
 
         jumpSound = directory.getEntry( "platform:jump", Sound.class );
         fireSound = directory.getEntry( "platform:pew", Sound.class );
         plopSound = directory.getEntry( "platform:plop", Sound.class );
         meowSound = directory.getEntry( "platform:meow", Sound.class );
+
+        setBackground(backgroundTexture.getTexture());
 
         switch(level) {
             case 1:

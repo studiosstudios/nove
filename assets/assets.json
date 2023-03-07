@@ -19,7 +19,8 @@
         "platform:spikes": "platform/spikes.png",
         "platform:button": "platform/button.png",
         "platform:flamethrower": "platform/flamethrower.png",
-        "platform:flame": "platform/flame.png"
+        "platform:flame": "platform/flame.png",
+        "platform:background": "platform/labBkg_concept.png"
     },
     "jsons"  : {
         "platform:constants_l1": "platform/constants_l1.json",

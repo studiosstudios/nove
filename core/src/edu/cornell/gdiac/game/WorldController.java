@@ -103,6 +103,8 @@ public abstract class WorldController implements Screen {
 	/** Countdown active for winning or losing */
 	private int countdown;
 
+	private Texture background;
+
 	/**
 	 * Returns true if debug mode is active.
 	 *
@@ -206,7 +208,17 @@ public abstract class WorldController implements Screen {
 	public GameCanvas getCanvas() {
 		return canvas;
 	}
-	
+
+	/**
+	 * Sets the background to be drawn for this world
+	 *
+	 * @param bkgd the texture of the background
+	 */
+	public void setBackground(Texture bkgd) {
+		background = bkgd;
+	}
+
+
 	/**
 	 * Sets the canvas associated with this controller
 	 *
@@ -468,6 +480,9 @@ public abstract class WorldController implements Screen {
 		canvas.clear();
 		
 		canvas.begin();
+		if (background != null) {
+			canvas.draw(background, 0, 0);
+		}
 		for(Obstacle obj : objects) {
 			obj.draw(canvas);
 		}
