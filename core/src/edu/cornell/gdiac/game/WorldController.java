@@ -501,12 +501,12 @@ public abstract class WorldController implements Screen {
 			canvas.begin(); // DO NOT SCALE
 //			canvas.drawTextCentered("VICTORY!", displayFont, 0.0f);
 			canvas.end();
-		} else if (failed) {
+		}/* else if (failed) {
 			displayFont.setColor(Color.RED);
 			canvas.begin(); // DO NOT SCALE
 			canvas.drawTextCentered("FAILURE!", displayFont, 0.0f);
 			canvas.end();
-		}
+		}*/
 	}
 
 	/**
