@@ -240,7 +240,7 @@ public class DeadBody extends CapsuleObstacle {
         sensorDef.density = data.getFloat("density", 0);
         sensorDef.isSensor = true;
         sensorShape = new PolygonShape();
-        JsonValue sensorjv = data.get("sensor");
+        JsonValue sensorjv = data.get("ground_sensor");
         sensorShape.setAsBox(sensorjv.getFloat("shrink", 0) * getWidth() / 2.0f,
                 sensorjv.getFloat("height", 0), sensorCenter, 0.0f);
         sensorDef.shape = sensorShape;
