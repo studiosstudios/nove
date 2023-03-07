@@ -95,6 +95,7 @@ public abstract class WorldController implements Screen {
 	private boolean active;
 	/** Whether we have completed this level */
 	private boolean complete;
+	private boolean ret;
 	/** Whether we have failed at this world (and need a reset) */
 	private boolean failed;
 	/** Whether or not debug mode is active */
@@ -135,6 +136,11 @@ public abstract class WorldController implements Screen {
 		return complete;
 	}
 
+	/** Returns true if returning to prev level
+	 *
+	 * @return true if returning to previous level
+	 */
+	public boolean isRet() { return ret; }
 	/**
 	 * Sets whether the level is completed.
 	 *
@@ -149,6 +155,13 @@ public abstract class WorldController implements Screen {
 		complete = value;
 	}
 
+	public void setRet(boolean value){
+		if(value) {
+			countdown = EXIT_COUNT;
+		}
+//		System.out.println("ret set to " + value);
+		ret = value;
+	}
 	/**
 	 * Returns true if the level is failed.
 	 *
@@ -250,6 +263,8 @@ public abstract class WorldController implements Screen {
 		this.bounds = new Rectangle(bounds);
 		this.scale = new Vector2(1,1);
 		complete = false;
+//		System.out.println("ret set to false in WorldController");
+		ret = false;
 		failed = false;
 		debug  = false;
 		active = false;
@@ -379,6 +394,10 @@ public abstract class WorldController implements Screen {
 				pause();
 //				System.out.println("switchtonext-worldcontroller");
 				listener.exitScreen(this, EXIT_NEXT);
+				return false;
+			} else if (ret) {
+				pause();
+				listener.exitScreen(this, EXIT_PREV);
 				return false;
 			}
 		}
@@ -542,6 +561,7 @@ public abstract class WorldController implements Screen {
 				postUpdate(delta);
 			}
 			draw(delta);
+//			System.out.println("render: " + isRet());
 		}
 	}
 

@@ -56,15 +56,19 @@ public class LevelController extends WorldController implements ContactListener 
     /** Physics constants for initialization */
     private JsonValue constants;
     /** Reference to the character avatar */
-    private Cat avatar;
+    private static Cat avatar;
     /** Reference to the goalDoor (for collision detection) */
     private BoxObstacle goalDoor;
+    /**Reference to the returnDoor (for collision detection) */
+    private BoxObstacle retDoor;
 
     /** Mark set to handle more sophisticated collision callbacks */
     protected ObjectSet<Fixture> sensorFixtures;
 
     /** Level number **/
     private int level;
+
+    public boolean isRet;
 
     /**
      * Creates and initialize a new instance of the platformer game
@@ -75,6 +79,8 @@ public class LevelController extends WorldController implements ContactListener 
         super(DEFAULT_WIDTH,DEFAULT_HEIGHT,DEFAULT_GRAVITY);
         setDebug(false);
         setComplete(false);
+//        System.out.println("ret set to false in Level Controller");
+        setRet(false);
         setFailure(false);
         world.setContactListener(this);
         sensorFixtures = new ObjectSet<Fixture>();
@@ -119,6 +125,8 @@ public class LevelController extends WorldController implements ContactListener 
      * This method disposes of the world and creates a new one.
      */
     public void reset() {
+//        System.out.println("temp_ret is: " + temp_ret);
+//        System.out.println("temp_comp is: " + isComplete());
         Vector2 gravity = new Vector2(world.getGravity() );
 
         for(Obstacle obj : objects) {
@@ -131,14 +139,18 @@ public class LevelController extends WorldController implements ContactListener 
         world = new World(gravity,false);
         world.setContactListener(this);
         setComplete(false);
+        boolean temp_ret = isRet();
+//        System.out.println("temp_ret is: " + temp_ret);
+        setRet(false);
         setFailure(false);
-        populateLevel();
+        populateLevel(temp_ret);
     }
 
     /**
      * Lays out the game geography.
      */
-    private void populateLevel() {
+    private void populateLevel(boolean ret) {
+//        System.out.println("populate level:" + ret);
         // Add level goal
         float dwidth  = goalTile.getRegionWidth()/scale.x;
         float dheight = goalTile.getRegionHeight()/scale.y;
@@ -155,6 +167,19 @@ public class LevelController extends WorldController implements ContactListener 
         goalDoor.setTexture(goalTile);
         goalDoor.setName("goal");
         addObject(goalDoor);
+
+        JsonValue retgoal = constants.get("ret_goal");
+        JsonValue retgoalpos = retgoal.get("pos");
+        retDoor = new BoxObstacle(retgoalpos.getFloat(0),retgoalpos.getFloat(1),dwidth,dheight);
+        retDoor.setBodyType(BodyDef.BodyType.StaticBody);
+        retDoor.setDensity(retgoal.getFloat("density", 0));
+        retDoor.setFriction(retgoal.getFloat("friction", 0));
+        retDoor.setRestitution(retgoal.getFloat("restitution", 0));
+//        goalDoor.setSensor(true);
+        retDoor.setDrawScale(scale);
+        retDoor.setTexture(goalTile);
+        retDoor.setName("ret_goal");
+        addObject(retDoor);
 
         String wname = "wall";
         JsonValue walljv = constants.get("walls");
@@ -194,7 +219,7 @@ public class LevelController extends WorldController implements ContactListener 
         // Create dude
         dwidth  = avatarTexture.getRegionWidth()/scale.x;
         dheight = avatarTexture.getRegionHeight()/scale.y;
-        avatar = new Cat(constants.get("cat"), dwidth, dheight);
+        avatar = new Cat(constants.get("cat"), dwidth, dheight, ret, avatar == null? null : avatar.getPosition());
         avatar.setDrawScale(scale);
         avatar.setTexture(avatarTexture);
         addObject(avatar);
@@ -235,6 +260,7 @@ public class LevelController extends WorldController implements ContactListener 
         }
 
         if (!isFailure() && avatar.getY() < -1) {
+//            System.out.println(avatar.getY());
             setFailure(true);
             return false;
         }
@@ -349,6 +375,10 @@ public class LevelController extends WorldController implements ContactListener 
             if ((bd1 == avatar   && bd2 == goalDoor) ||
                     (bd1 == goalDoor && bd2 == avatar)) {
                 setComplete(true);
+            }
+            if ((bd1 == avatar && bd2 == retDoor) ||
+                    (bd1 == retDoor && bd2 == avatar)){
+                setRet(true);
             }
         } catch (Exception e) {
             e.printStackTrace();

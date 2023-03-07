@@ -120,7 +120,6 @@ public class GDXRoot extends Game implements ScreenListener {
 				controllers[ii].setScreenListener(this);
 				controllers[ii].setCanvas(canvas);
 			}
-			System.out.println(controllers[current]);
 			controllers[current].reset();
 			setScreen(controllers[current]);
 
@@ -129,11 +128,15 @@ public class GDXRoot extends Game implements ScreenListener {
 		} else if (exitCode == WorldController.EXIT_NEXT) {
 //			System.out.println("switch to next-gdxroot");
 			current = (current+1) % controllers.length;
-//			System.out.println(controllers[current]);
+			controllers[current].setComplete(true);
+			controllers[current].setRet(false);
 			controllers[current].reset();
 			setScreen(controllers[current]);
 		} else if (exitCode == WorldController.EXIT_PREV) {
+//			System.out.println("exit_prev ran");
 			current = (current+controllers.length-1) % controllers.length;
+			controllers[current].setRet(true);
+			controllers[current].setComplete(false);
 			controllers[current].reset();
 			setScreen(controllers[current]);
 		} else if (exitCode == WorldController.EXIT_QUIT) {
