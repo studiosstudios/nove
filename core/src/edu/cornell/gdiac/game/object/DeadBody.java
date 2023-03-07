@@ -1,8 +1,5 @@
 /*
- * CatModel.java
- *
- * You SHOULD NOT need to modify this file.  However, you may learn valuable lessons
- * for the rest of the lab by looking at it.
+ * DeadBodyModel.java
  *
  * Author: Walker M. White
  * Based on original PhysicsDemo Lab by Don Holden, 2007
@@ -34,27 +31,17 @@ public class DeadBody extends CapsuleObstacle {
     /** Whether we are actively dashing */
     private boolean isDashing;
     public boolean canDash;
-    /** The amount to slow the character down */
+    /** The amount to slow the model down */
     private final float damping;
-    /** The maximum character speed */
+    /** The maximum model speed */
     private final float maxspeed;
     /** Identifier to allow us to track the sensor in ContactListener */
     private final String sensorName;
-    /** The impulse for the character jump */
-    private final float jump_force;
-    /** Damping multiplier to slow down jump */
-    private final float jumpDamping;
 
-    /** The current horizontal movement of the character */
+    /** The current horizontal movement of the model */
     private float   movement;
-    /** Current jump movement of the character */
-    private float   jumpMovement;
-    /** Which direction is the character facing */
+    /** Which direction is the model facing */
     private boolean faceRight;
-    /** Whether we are actively jumping */
-    private boolean isJumping;
-    /** Whether we stopped jumping in air */
-    private boolean stoppedJumping;
     /** Whether our feet are on the ground */
     private boolean isGrounded;
     /** The physics shape of this object */
@@ -65,22 +52,22 @@ public class DeadBody extends CapsuleObstacle {
 
 
     /**
-     * Returns left/right movement of this character.
+     * Returns left/right movement of this model.
      *
-     * This is the result of input times cat force.
+     * This is the result of input times dead body force.
      *
-     * @return left/right movement of this character.
+     * @return left/right movement of this model.
      */
     public float getMovement() {
         return movement;
     }
 
     /**
-     * Sets left/right movement of this character.
+     * Sets left/right movement of this model.
      *
-     * This is the result of input times cat force.
+     * This is the result of input times dead body force.
      *
-     * @param value left/right movement of this character.
+     * @param value left/right movement of this model.
      */
     public void setMovement(float value) {
         movement = value;
@@ -94,54 +81,49 @@ public class DeadBody extends CapsuleObstacle {
 
 
     /**
-     * Returns true if the cat is on the ground.
+     * Returns true if the dead body is on the ground.
      *
-     * @return true if the cat is on the ground.
+     * @return true if the dead body is on the ground.
      */
     public boolean isGrounded() {
         return isGrounded;
     }
 
     /**
-     * Sets whether the cat is on the ground.
+     * Sets whether the dead body is on the ground.
      *
-     * @param value whether the cat is on the ground.
+     * @param value whether the dead body is on the ground.
      */
     public void setGrounded(boolean value) {
         isGrounded = value;
-        if (isGrounded) {
-            canDash = true;
-            jumpMovement = jump_force;
-            stoppedJumping = false;
-        }
     }
 
     /**
-     * Returns how much force to apply to get the cat moving
+     * Returns how much force to apply to get the dead body moving
      *
      * Multiply this by the input to get the movement value.
      *
-     * @return how much force to apply to get the cat moving
+     * @return how much force to apply to get the dead body moving
      */
     public float getForce() {
         return force;
     }
 
     /**
-     * Returns ow hard the brakes are applied to get a cat to stop moving
+     * Returns ow hard the brakes are applied to get a dead body to stop moving
      *
-     * @return ow hard the brakes are applied to get a cat to stop moving
+     * @return ow hard the brakes are applied to get a dead body to stop moving
      */
     public float getDamping() {
         return damping;
     }
 
     /**
-     * Returns the upper limit on cat left-right movement.
+     * Returns the upper limit on dead body left-right movement.
      *
      * This does NOT apply to vertical movement.
      *
-     * @return the upper limit on cat left-right movement.
+     * @return the upper limit on dead body left-right movement.
      */
     public float getMaxSpeed() {
         return maxspeed;
@@ -159,22 +141,22 @@ public class DeadBody extends CapsuleObstacle {
     }
 
     /**
-     * Returns true if this character is facing right
+     * Returns true if this model is facing right
      *
-     * @return true if this character is facing right
+     * @return true if this model is facing right
      */
     public boolean isFacingRight() {
         return faceRight;
     }
 
     /**
-     * Creates a new cat avatar with the given physics data
+     * Creates a new dead body model with the given physics data
      *
      * The size is expressed in physics units NOT pixels.  In order for
      * drawing to work properly, you MUST set the drawScale. The drawScale
      * converts the physics units to pixels.
      *
-     * @param data  	The physics constants for this cat
+     * @param data  	The physics constants for this dead body
      * @param width		The object width in physics units
      * @param height	The object width in physics units
      */
@@ -192,20 +174,15 @@ public class DeadBody extends CapsuleObstacle {
         maxspeed = data.getFloat("maxspeed", 0);
         damping = data.getFloat("damping", 0);
         force = data.getFloat("force", 0);
-        jump_force = data.getFloat( "jump_force", 0 );
         dash_force = data.getFloat( "dash_force", 0 );;
-        jumpDamping = data.getFloat("jump_damping", 0);
         sensorName = "deadBodyGroundSensor";
         this.data = data;
 
         // Gameplay attributes
         isGrounded = false;
-        canDash = false;
-        isJumping = false;
         faceRight = true;
-        stoppedJumping = false;
 
-        setName("cat");
+        setName("deadBody");
     }
 
     /**
@@ -225,11 +202,9 @@ public class DeadBody extends CapsuleObstacle {
 
         // Ground Sensor
         // -------------
-        // We only allow the cat to jump when he's on the ground.
-        // Double jumping is not allowed.
         //
-        // To determine whether or not the cat is on the ground,
-        // we create a thin sensor under his feet, which reports
+        // To determine whether or not the dead body is on the ground,
+        // we create a thin sensor under the feet, which reports
         // collisions with the world but has no collision response.
         Vector2 sensorCenter = new Vector2(0, -getHeight() / 2);
         FixtureDef sensorDef = new FixtureDef();
@@ -250,7 +225,7 @@ public class DeadBody extends CapsuleObstacle {
 
 
     /**
-     * Applies the force to the body of this cat
+     * Applies the force to the body of this dead body
      *
      * This method should be called after the force attribute is set.
      */
@@ -282,11 +257,6 @@ public class DeadBody extends CapsuleObstacle {
      */
     public void update(float dt) {
         // Apply cooldowns
-//        if (isJumping()) {
-//            jumpCooldown = jumpLimit;
-//        } else {
-//            jumpCooldown = Math.max(0, jumpCooldown - 1);
-//        }
 
         super.update(dt);
     }
