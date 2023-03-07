@@ -66,17 +66,23 @@ public class LevelController extends WorldController implements ContactListener 
     /** Physics constants for initialization */
     private JsonValue constants;
     /** Reference to the character avatar */
-    private Cat avatar;
+    private static Cat avatar;
     /** Reference to the goalDoor (for collision detection) */
     private BoxObstacle goalDoor;
+    /**Reference to the returnDoor (for collision detection) */
+    private BoxObstacle retDoor;
 
     /** Mark set to handle more sophisticated collision callbacks */
     protected ObjectSet<Fixture> sensorFixtures;
 
+    /** Level number **/
+    private int level;
+
+    public boolean isRet;
+
     /** object lists - in the future this will be one list maybe */
     private Array<Activator> activatorList;
     private Array<Spikes> spikesList;
-
     private Array<DeadBody> deadBodyList;
 
     /** hashmap to represent activator-spike relationships:
@@ -84,7 +90,7 @@ public class LevelController extends WorldController implements ContactListener 
     private HashMap<String, Array<Spikes>> activationRelations;
 
     private int numLives;
-    private static final int MAX_NUM_LIVES = 2;
+    private static final int MAX_NUM_LIVES = 4;
     private float dwidth;
     private float dheight;
     private Vector2 respawnPos;
@@ -96,10 +102,12 @@ public class LevelController extends WorldController implements ContactListener 
      *
      * The game has default gravity and other settings
      */
-    public LevelController() {
+    public LevelController(int level) {
         super(DEFAULT_WIDTH,DEFAULT_HEIGHT,DEFAULT_GRAVITY);
         setDebug(false);
         setComplete(false);
+//        System.out.println("ret set to false in Level Controller");
+        setRet(false);
         setFailure(false);
         activatorList = new Array<Activator>();
         spikesList = new Array<Spikes>();
@@ -107,6 +115,7 @@ public class LevelController extends WorldController implements ContactListener 
         activationRelations = new HashMap<String, Array<Spikes>>();
         world.setContactListener(this);
         sensorFixtures = new ObjectSet<Fixture>();
+        this.level = level;
         numLives = MAX_NUM_LIVES;
         died = false;
     }
@@ -132,7 +141,17 @@ public class LevelController extends WorldController implements ContactListener 
         fireSound = directory.getEntry( "platform:pew", Sound.class );
         plopSound = directory.getEntry( "platform:plop", Sound.class );
 
-        constants = directory.getEntry( "platform:constants", JsonValue.class );
+        switch(level) {
+            case 1:
+                constants = directory.getEntry("platform:constants_l1", JsonValue.class);
+                break;
+            case 2:
+                constants = directory.getEntry("platform:constants_l2", JsonValue.class);
+                break;
+            default:
+                throw new RuntimeException("Invalid level");
+        }
+
         super.gatherAssets(directory);
     }
 
@@ -143,34 +162,38 @@ public class LevelController extends WorldController implements ContactListener 
      */
     public void reset() {
         Vector2 gravity = new Vector2(world.getGravity() );
-
         for(Obstacle obj : objects) {
             obj.deactivatePhysics(world);
         }
         objects.clear();
         addQueue.clear();
         world.dispose();
+
+        activatorList.clear();
+        spikesList.clear();
+        deadBodyList.clear();
+
         numLives = MAX_NUM_LIVES;
+        died = false;
 
         world = new World(gravity,false);
         world.setContactListener(this);
         setComplete(false);
+        boolean temp_ret = isRet();
+        setRet(false);
         setFailure(false);
-        died = false;
-        populateLevel();
+
+        populateLevel(temp_ret);
     }
 
     /**
      * Lays out the game geography.
      */
-    private void populateLevel() {
+    private void populateLevel(boolean ret) {
         // Add level goal
         dwidth  = goalTile.getRegionWidth()/scale.x;
         dheight = goalTile.getRegionHeight()/scale.y;
 
-        activatorList.clear();
-        spikesList.clear();
-        deadBodyList.clear();
         activationRelations = new HashMap<String, Array<Spikes>>();
 
         JsonValue goal = constants.get("goal");
@@ -185,6 +208,19 @@ public class LevelController extends WorldController implements ContactListener 
         goalDoor.setTexture(goalTile);
         goalDoor.setName("goal");
         addObject(goalDoor);
+
+        JsonValue retgoal = constants.get("ret_goal");
+        JsonValue retgoalpos = retgoal.get("pos");
+        retDoor = new BoxObstacle(retgoalpos.getFloat(0),retgoalpos.getFloat(1),dwidth,dheight);
+        retDoor.setBodyType(BodyDef.BodyType.StaticBody);
+        retDoor.setDensity(retgoal.getFloat("density", 0));
+        retDoor.setFriction(retgoal.getFloat("friction", 0));
+        retDoor.setRestitution(retgoal.getFloat("restitution", 0));
+//        goalDoor.setSensor(true);
+        retDoor.setDrawScale(scale);
+        retDoor.setTexture(goalTile);
+        retDoor.setName("ret_goal");
+        addObject(retDoor);
 
         String wname = "wall";
         JsonValue walljv = constants.get("walls");
@@ -270,31 +306,43 @@ public class LevelController extends WorldController implements ContactListener 
             addObject(spikes);
         }
 
-        //Add pushable box
+        //Add pushable boxes
+        JsonValue boxesJV = constants.get("box");
         dwidth  = steelTile.getRegionWidth()/scale.x;
         dheight = steelTile.getRegionHeight()/scale.y;
-        BoxObstacle box = new BoxObstacle(2, 4, dwidth, dheight);
-        box.setTexture(steelTile);
-        box.setDrawScale(scale);
-        box.setName("box");
-        box.setFriction(0.9f);
-        box.setMass(200);
-        addObject(box);
+        for (JsonValue boxJV : boxesJV.get("boxes")) {
+            float x = boxJV.get("pos").getFloat(0);
+            float y = boxJV.get("pos").getFloat(1);
+            BoxObstacle box = new BoxObstacle(x, y, dwidth, dheight);
+            box.setTexture(steelTile);
+            box.setDrawScale(scale);
+            box.setName("box");
+            box.setFriction(boxesJV.getFloat("friction"));
+            box.setMass(boxesJV.getFloat("mass"));
+            addObject(box);
+        }
 
         volume = constants.getFloat("volume", 1.0f);
 
-        // Create flamethrower
-        Flamethrower flamethrower = new Flamethrower(constants.get("flamethrower"),24.0f, 3.8f, 0f, scale, flamethrowerTexture, flameTexture);
-        addObject(flamethrower);
+        // Create flamethrowers
+        JsonValue flamethrowersJV = constants.get("flamethrower");
+        for (JsonValue flamethrowerJV : flamethrowersJV.get("flamethrowers")) {
+            float x = flamethrowerJV.get("pos").getFloat(0);
+            float y = flamethrowerJV.get("pos").getFloat(1);
+            float angle = flamethrowerJV.getFloat("angle");
+            Flamethrower flamethrower = new Flamethrower(constants.get("flamethrower"),x, y, angle, scale, flamethrowerTexture, flameTexture);
+            addObject(flamethrower);
+        }
 
         // Create dude
         dwidth  = avatarTexture.getRegionWidth()/scale.x;
         dheight = avatarTexture.getRegionHeight()/scale.y;
-        avatar = new Cat(constants.get("cat"), dwidth, dheight);
+        avatar = new Cat(constants.get("cat"), dwidth, dheight, ret, avatar == null? null : avatar.getPosition());
         avatar.setDrawScale(scale);
         avatar.setTexture(avatarTexture);
         respawnPos = avatar.getPosition();
         addObject(avatar);
+
     }
 
     /**
@@ -398,8 +446,8 @@ public class LevelController extends WorldController implements ContactListener 
         Object fd2 = fix2.getUserData();
 
         try {
-            Obstacle bd1 = (Obstacle)body1.getUserData();
-            Obstacle bd2 = (Obstacle)body2.getUserData();
+            Obstacle bd1 = (Obstacle) body1.getUserData();
+            Obstacle bd2 = (Obstacle) body2.getUserData();
 
             // Test bullet collision with world
             if (bd1.getName().equals("bullet") && bd2 != avatar) {
@@ -418,17 +466,18 @@ public class LevelController extends WorldController implements ContactListener 
             }
 
             // Check for win condition
-            if ((bd1 == avatar   && bd2 == goalDoor) ||
+            if ((bd1 == avatar && bd2 == goalDoor) ||
                     (bd1 == goalDoor && bd2 == avatar)) {
                 setComplete(true);
             }
-
+            if ((bd1 == avatar && bd2 == retDoor) ||
+                    (bd1 == retDoor && bd2 == avatar)) {
+                setRet(true);
+            }
             // Check for death
-            if ((bd1 == avatar && (fd2 == Spikes.getSensorName() || fd2 == Flame.getSensorName())) ||
-                    (bd2 == avatar && (fd1 == Spikes.getSensorName() || fd1 == Flame.getSensorName()))){
+            if (!died && ((bd1 == avatar && (fd2 == Spikes.getSensorName() || fd2 == Flame.getSensorName())) ||
+                    (bd2 == avatar && (fd1 == Spikes.getSensorName() || fd1 == Flame.getSensorName())))) {
                 die();
-//            } else {
-//                died = false;
             }
 
             // Check for button
@@ -437,10 +486,9 @@ public class LevelController extends WorldController implements ContactListener 
             } else if (fd1 instanceof Button) {
                 ((Button) fd1).setPressed(true);
             }
-        } catch (Exception e) {
+        }catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     /**
@@ -480,9 +528,13 @@ public class LevelController extends WorldController implements ContactListener 
     }
 
     /** Unused ContactListener method */
-    public void postSolve(Contact contact, ContactImpulse impulse) {}
+    public void postSolve(Contact contact, ContactImpulse impulse) {
+
+    }
     /** Unused ContactListener method */
-    public void preSolve(Contact contact, Manifold oldManifold) {}
+    public void preSolve(Contact contact, Manifold oldManifold) {
+
+    }
 
     /**
      * Called when the Screen is paused.
@@ -505,7 +557,6 @@ public class LevelController extends WorldController implements ContactListener 
         died = true;
         // decrement lives
         numLives--;
-
         // 0 lives
         if (numLives <= 0) {
             numLives=MAX_NUM_LIVES;

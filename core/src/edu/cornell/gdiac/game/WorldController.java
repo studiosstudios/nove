@@ -59,7 +59,7 @@ public abstract class WorldController implements Screen {
 	/** Exit code for jumping back to previous level */
 	public static final int EXIT_PREV = 2;
     /** How many frames after winning/losing do we continue? */
-	public static final int EXIT_COUNT = 120;
+	public static final int EXIT_COUNT = 0;
 
 	/** The amount of time for a physics engine step. */
 	public static final float WORLD_STEP = 1/60.0f;
@@ -95,6 +95,7 @@ public abstract class WorldController implements Screen {
 	private boolean active;
 	/** Whether we have completed this level */
 	private boolean complete;
+	private boolean ret;
 	/** Whether we have failed at this world (and need a reset) */
 	private boolean failed;
 	/** Whether or not debug mode is active */
@@ -135,6 +136,11 @@ public abstract class WorldController implements Screen {
 		return complete;
 	}
 
+	/** Returns true if returning to prev level
+	 *
+	 * @return true if returning to previous level
+	 */
+	public boolean isRet() { return ret; }
 	/**
 	 * Sets whether the level is completed.
 	 *
@@ -149,6 +155,13 @@ public abstract class WorldController implements Screen {
 		complete = value;
 	}
 
+	public void setRet(boolean value){
+		if(value) {
+			countdown = EXIT_COUNT;
+		}
+//		System.out.println("ret set to " + value);
+		ret = value;
+	}
 	/**
 	 * Returns true if the level is failed.
 	 *
@@ -250,6 +263,8 @@ public abstract class WorldController implements Screen {
 		this.bounds = new Rectangle(bounds);
 		this.scale = new Vector2(1,1);
 		complete = false;
+//		System.out.println("ret set to false in WorldController");
+		ret = false;
 		failed = false;
 		debug  = false;
 		active = false;
@@ -369,14 +384,23 @@ public abstract class WorldController implements Screen {
 			pause();
 			listener.exitScreen(this, EXIT_QUIT);
 			return false;
-		} else if (countdown > 0) {
+		}
+		else if (countdown > 0) {
 			countdown--;
 		} else if (countdown == 0) {
+//			System.out.println("got to preupdate");
+
 			if (failed) {
+//				System.out.println("got to failed here");
 				reset();
 			} else if (complete) {
 				pause();
-				reset();
+//				System.out.println("switchtonext-worldcontroller");
+				listener.exitScreen(this, EXIT_NEXT);
+				return false;
+			} else if (ret) {
+				pause();
+				listener.exitScreen(this, EXIT_PREV);
 				return false;
 			}
 		}
@@ -475,14 +499,14 @@ public abstract class WorldController implements Screen {
 		if (complete && !failed) {
 			displayFont.setColor(Color.YELLOW);
 			canvas.begin(); // DO NOT SCALE
-			canvas.drawTextCentered("VICTORY!", displayFont, 0.0f);
+//			canvas.drawTextCentered("VICTORY!", displayFont, 0.0f);
 			canvas.end();
-		} else if (failed) {
+		}/* else if (failed) {
 			displayFont.setColor(Color.RED);
 			canvas.begin(); // DO NOT SCALE
 			canvas.drawTextCentered("FAILURE!", displayFont, 0.0f);
 			canvas.end();
-		}
+		}*/
 	}
 
 	/**
@@ -554,6 +578,7 @@ public abstract class WorldController implements Screen {
 				postUpdate(delta);
 			}
 			draw(delta);
+//			System.out.println("render: " + isRet());
 		}
 	}
 

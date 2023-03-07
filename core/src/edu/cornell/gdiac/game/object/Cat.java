@@ -207,10 +207,10 @@ public class Cat extends CapsuleObstacle {
      * @param width		The object width in physics units
      * @param height	The object width in physics units
      */
-    public Cat(JsonValue data, float width, float height) {
+    public Cat(JsonValue data, float width, float height, boolean ret, Vector2 prev_pos) {
         // The shrink factors fit the image to a tigher hitbox
-        super(	data.get("pos").getFloat(0),
-                data.get("pos").getFloat(1),
+        super(data.get(ret?"ret_pos":"pos").getFloat(0),
+                prev_pos == null ? data.get(ret?"ret_pos":"pos").getFloat(1) : prev_pos.y,
                 width*data.get("shrink").getFloat( 0 ),
                 height*data.get("shrink").getFloat( 1 ),
                 Orientation.TOP);
@@ -231,9 +231,11 @@ public class Cat extends CapsuleObstacle {
         isGrounded = false;
         canDash = true;
         isJumping = false;
-        faceRight = true;
+        if(ret)
+            faceRight = false;
+        else
+            faceRight = true;
         stoppedJumping = false;
-
         setName("cat");
     }
 
