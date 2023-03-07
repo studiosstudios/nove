@@ -228,7 +228,7 @@ public class InputController {
 		// Give priority to gamepad results
 		dashPressed = (Gdx.input.isKeyPressed(Input.Keys.D));
 		resetPressed = (Gdx.input.isKeyPressed(Input.Keys.R));
-		debugPressed = (Gdx.input.isKeyPressed(Input.Keys.D));
+		debugPressed = (Gdx.input.isKeyPressed(Input.Keys.B));
 		primePressed = (Gdx.input.isKeyPressed(Input.Keys.UP));
 //		secondPressed = (Gdx.input.isKeyPressed(Input.Keys.SPACE));
 		exitPressed  = (Gdx.input.isKeyPressed(Input.Keys.ESCAPE));
