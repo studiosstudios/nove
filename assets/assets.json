@@ -14,11 +14,8 @@
         "platform:cat":  "platform/cat.png",
         "platform:rope":  "platform/ropebridge.png",
         "platform:barrier": "platform/barrier.png",
-<<<<<<< HEAD
         "platform:bullet":  "platform/bullet.png",
         "platform:spikes": "platform/spikes.png"
-=======
->>>>>>> 988de60 (adds variable control, changes cat hitbox, adjusts loading screen)
     },
     "jsons"  : {
         "platform:constants": "platform/constants.json"
