@@ -409,6 +409,8 @@ public class LevelController extends WorldController implements ContactListener 
     private void die(){
         avatar.setJumping(false);
         died = true;
+        // decrement lives
+        numLives--;
 
         // 0 lives
         if (numLives <= 0) {
@@ -422,9 +424,6 @@ public class LevelController extends WorldController implements ContactListener 
             dead_body.setLinearVelocity(new Vector2(0,0));
             dead_body.setPosition(avatar.getPosition());
             new_dead_body = dead_body;
-
-            // decrement lives
-            numLives--;
         }
     }
 
