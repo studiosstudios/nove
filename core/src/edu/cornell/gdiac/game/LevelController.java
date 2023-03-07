@@ -64,6 +64,14 @@ public class LevelController extends WorldController implements ContactListener 
     /** Mark set to handle more sophisticated collision callbacks */
     protected ObjectSet<Fixture> sensorFixtures;
 
+    private int numLives;
+    private static final int MAX_NUM_LIVES = 2;
+    private float dwidth;
+    private float dheight;
+    private Vector2 respawnPos;
+    private boolean died;
+    private Cat new_dead_body;
+
     /**
      * Creates and initialize a new instance of the platformer game
      *
@@ -76,6 +84,8 @@ public class LevelController extends WorldController implements ContactListener 
         setFailure(false);
         world.setContactListener(this);
         sensorFixtures = new ObjectSet<Fixture>();
+        numLives = MAX_NUM_LIVES;
+        died = false;
     }
 
     /**
@@ -114,6 +124,7 @@ public class LevelController extends WorldController implements ContactListener 
         objects.clear();
         addQueue.clear();
         world.dispose();
+        numLives = MAX_NUM_LIVES;
 
         world = new World(gravity,false);
         world.setContactListener(this);
@@ -127,8 +138,8 @@ public class LevelController extends WorldController implements ContactListener 
      */
     private void populateLevel() {
         // Add level goal
-        float dwidth  = goalTile.getRegionWidth()/scale.x;
-        float dheight = goalTile.getRegionHeight()/scale.y;
+        dwidth  = goalTile.getRegionWidth()/scale.x;
+        dheight = goalTile.getRegionHeight()/scale.y;
 
         JsonValue goal = constants.get("goal");
         JsonValue goalpos = goal.get("pos");
@@ -184,6 +195,7 @@ public class LevelController extends WorldController implements ContactListener 
         avatar = new Cat(constants.get("cat"), dwidth, dheight);
         avatar.setDrawScale(scale);
         avatar.setTexture(avatarTexture);
+        respawnPos = avatar.getPosition();
         addObject(avatar);
 
         // Create rope bridge
@@ -235,6 +247,12 @@ public class LevelController extends WorldController implements ContactListener 
         if (!isFailure() && avatar.getY() < -1) {
             setFailure(true);
             return false;
+        }
+
+        if (!isFailure() && died) {
+            died = false;
+            avatar.setPosition(respawnPos);
+            addObject(new_dead_body);
         }
 
         return true;
@@ -328,6 +346,8 @@ public class LevelController extends WorldController implements ContactListener 
             if ((bd1 == avatar && fd2 == Spikes.getSensorName()) ||
                     (bd2 == avatar && fd1 == Spikes.getSensorName())){
                 die();
+//            } else {
+//                died = false;
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -387,6 +407,24 @@ public class LevelController extends WorldController implements ContactListener 
      */
     private void die(){
         avatar.setJumping(false);
-        setFailure(true);
+        died = true;
+        // decrement lives
+        numLives--;
+
+        // 0 lives
+        if (numLives <= 0) {
+            numLives=MAX_NUM_LIVES;
+            setFailure(true);
+        } else {
+            // create dead body
+            Cat dead_body = new Cat(constants.get("cat"), dwidth, dheight);
+            dead_body.setDrawScale(scale);
+            dead_body.setTexture(avatarTexture);
+            dead_body.setSensor(false);
+            dead_body.setLinearVelocity(new Vector2(0,0));
+            dead_body.setPosition(avatar.getPosition());
+            new_dead_body = dead_body;
+        }
     }
+
 }
