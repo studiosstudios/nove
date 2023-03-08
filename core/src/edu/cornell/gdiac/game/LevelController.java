@@ -51,6 +51,12 @@ public class LevelController extends WorldController implements ContactListener 
     private TextureRegion flameTexture;
     /** Texture asset for the base of the flamethrower */
     private TextureRegion flamethrowerTexture;
+    /** Texture asset for the left part of a laser */
+    private TextureRegion laserLeftTexture;
+    /** Texture asset for the middle part of a laser */
+    private TextureRegion laserMiddleTexture;
+    /** Texture asset for the right part of a laser */
+    private TextureRegion laserRightTexture;
     /** Texture asset for the dead cat */
     private TextureRegion deadCatTexture;
     /** Texture asset for the dead cat */
@@ -149,6 +155,9 @@ public class LevelController extends WorldController implements ContactListener 
         buttonTexture = new TextureRegion(directory.getEntry("platform:button", Texture.class));
         flameTexture = new TextureRegion(directory.getEntry("platform:flame", Texture.class));
         flamethrowerTexture = new TextureRegion(directory.getEntry("platform:flamethrower", Texture.class));
+        laserLeftTexture = new TextureRegion(directory.getEntry("platform:laserLeft", Texture.class));
+        laserMiddleTexture = new TextureRegion(directory.getEntry("platform:laserMiddle", Texture.class));
+        laserRightTexture = new TextureRegion(directory.getEntry("platform:laserRight", Texture.class));
         deadCatTexture = new TextureRegion((directory.getEntry("platform:deadCat", Texture.class)));
         backgroundTexture = new TextureRegion((directory.getEntry("platform:background", Texture.class)));
 
@@ -275,7 +284,6 @@ public class LevelController extends WorldController implements ContactListener 
         // This world is heavier
         world.setGravity( new Vector2(0,defaults.getFloat("gravity",0)) );
 
-
         //Add activators
         JsonValue activatorsJV = constants.get("activator");
         for (JsonValue activatorJV : activatorsJV.get("activators")) {
@@ -341,7 +349,7 @@ public class LevelController extends WorldController implements ContactListener 
             addObject(box);
         }
 
-        volume = constants.getFloat("volume", 1.0f);
+        volume = constants.getFloat("volume", 0.2f);
 
         // Create flamethrowers
         JsonValue flamethrowersJV = constants.get("flamethrower");
@@ -351,6 +359,17 @@ public class LevelController extends WorldController implements ContactListener 
             float angle = flamethrowerJV.getFloat("angle");
             Flamethrower flamethrower = new Flamethrower(constants.get("flamethrower"),x, y, angle, scale, flamethrowerTexture, flameTexture);
             addObject(flamethrower);
+        }
+
+        // Create Laser
+        JsonValue lasersJV = constants.get("laser");
+        for (JsonValue laserJV : lasersJV.get("lasers")) {
+            float x = laserJV.get("pos").getFloat(0);
+            float y = laserJV.get("pos").getFloat(1);
+            LaserBeam laser = new LaserBeam(constants.get("laser"), x, y, 8, dwidth,dheight,"laserbeam");
+            laser.setTexture(laserMiddleTexture);
+            laser.setDrawScale(scale);
+            addObject(laser);
         }
 
         // Create dude
@@ -513,6 +532,9 @@ public class LevelController extends WorldController implements ContactListener 
                 if (fd2 == Flame.getSensorName()){
                     die();
                 }
+                if (fd2 == LaserBeam.getSensorName()) {
+                    die();
+                }
 
             }
 
@@ -611,7 +633,6 @@ public class LevelController extends WorldController implements ContactListener 
            if (fd1 == Flame.getSensorName()) {
                 ((DeadBody) fd2).setBurning(false);
             }
-
         }
 
         // Check for button
@@ -620,7 +641,6 @@ public class LevelController extends WorldController implements ContactListener 
         } else if (fd1 instanceof Activator) {
             ((Activator) fd1).removePress();
         }
-
     }
 
     /** Unused ContactListener method */
