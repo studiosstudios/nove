@@ -49,6 +49,8 @@ public class LevelController extends WorldController implements ContactListener 
     private TextureRegion flameTexture;
     /** Texture asset for the base of the flamethrower */
     private TextureRegion flamethrowerTexture;
+    /** Texture asset for the dead cat */
+    private TextureRegion deadCatTexture;
 
     /** The jump sound.  We only want to play once. */
     private Sound jumpSound;
@@ -59,6 +61,10 @@ public class LevelController extends WorldController implements ContactListener 
     /** The weapon pop sound.  We only want to play once. */
     private Sound plopSound;
     private long plopId = -1;
+
+    /** The meow sound.  We only want to play once. */
+    private Sound meowSound;
+    private long meowId = -1;
     /** The default sound volume */
     private float volume;
 
@@ -136,10 +142,12 @@ public class LevelController extends WorldController implements ContactListener 
         buttonTexture = new TextureRegion(directory.getEntry("platform:button", Texture.class));
         flameTexture = new TextureRegion(directory.getEntry("platform:flame", Texture.class));
         flamethrowerTexture = new TextureRegion(directory.getEntry("platform:flamethrower", Texture.class));
+        deadCatTexture = new TextureRegion((directory.getEntry("platform:deadCat", Texture.class)));
 
         jumpSound = directory.getEntry( "platform:jump", Sound.class );
         fireSound = directory.getEntry( "platform:pew", Sound.class );
         plopSound = directory.getEntry( "platform:plop", Sound.class );
+        meowSound = directory.getEntry( "platform:meow", Sound.class );
 
         switch(level) {
             case 1:
@@ -353,6 +361,7 @@ public class LevelController extends WorldController implements ContactListener 
 
         if (!isFailure() && died) {
             died = false;
+            new_dead_body.setFacingRight(avatar.isFacingRight());
             avatar.setPosition(respawnPos);
             addObject(new_dead_body);
             deadBodyList.add(new_dead_body);
@@ -374,13 +383,19 @@ public class LevelController extends WorldController implements ContactListener 
      */
     public void update(float dt) {
         // Process actions in object model
-        avatar.setMovement(InputController.getInstance().getHorizontal() *avatar.getForce());
+        avatar.setMovement(InputController.getInstance().getHorizontal() *avatar.getForce() * (avatar.getIsClimbing() ? 0 : 1));
+        avatar.setVerticalMovement(InputController.getInstance().getVertical() * avatar.getForce());
         avatar.setJumping(InputController.getInstance().didPrimary());
         avatar.setDashing(InputController.getInstance().didDash());
+        avatar.setClimbing(InputController.getInstance().didClimb() && avatar.isWalled());
 
         avatar.applyForce();
         if (avatar.isJumping() && avatar.isGrounded()) {
             jumpId = playSound( jumpSound, jumpId, volume );
+        }
+
+        if (InputController.getInstance().didMeow()){
+            meowId = playSound(meowSound, meowId, volume);
         }
 
         // Process buttons
@@ -418,10 +433,16 @@ public class LevelController extends WorldController implements ContactListener 
             Obstacle bd2 = (Obstacle) body2.getUserData();
 
             // See if we have landed on the ground.
-            if ((avatar.getSensorName().equals(fd2) && avatar != bd1) ||
-                    (avatar.getSensorName().equals(fd1) && avatar != bd2)) {
+            if ((avatar.getGroundSensorName().equals(fd2) && avatar != bd1) ||
+                    (avatar.getGroundSensorName().equals(fd1) && avatar != bd2)) {
                 avatar.setGrounded(true);
                 sensorFixtures.add(avatar == bd1 ? fix2 : fix1); // Could have more than one ground
+            }
+
+            // See if we are touching a wall
+            if ((avatar.getSideSensorName().equals(fd2) && avatar != bd1) ||
+                    (avatar.getSideSensorName().equals(fd1) && avatar != bd2)) {
+                avatar.incrementWalled();
             }
 
             // Check for win condition
@@ -470,19 +491,24 @@ public class LevelController extends WorldController implements ContactListener 
         Object bd1 = body1.getUserData();
         Object bd2 = body2.getUserData();
 
-        if ((avatar.getSensorName().equals(fd2) && avatar != bd1) ||
-                (avatar.getSensorName().equals(fd1) && avatar != bd2)) {
+        if ((avatar.getGroundSensorName().equals(fd2) && avatar != bd1) ||
+                (avatar.getGroundSensorName().equals(fd1) && avatar != bd2)) {
             sensorFixtures.remove(avatar == bd1 ? fix2 : fix1);
             if (sensorFixtures.size == 0) {
                 avatar.setGrounded(false);
             }
         }
 
-        // Check for button
-        if (fd2 instanceof Button) {
-            ((Button) fd2).setPressed(false);
-        } else if (fd1 instanceof Button) {
-            ((Button) fd1).setPressed(false);
+        // Not handling case where there may be multiple walls at once
+        if ((avatar.getSideSensorName().equals(fd2) && avatar != bd1) ||
+                (avatar.getSideSensorName().equals(fd1) && avatar != bd2)) {
+            avatar.decrementWalled();
+            // Check for button
+            if (fd2 instanceof Button) {
+                ((Button) fd2).setPressed(false);
+            } else if (fd1 instanceof Button) {
+                ((Button) fd1).setPressed(false);
+            }
         }
     }
 
@@ -505,6 +531,7 @@ public class LevelController extends WorldController implements ContactListener 
         jumpSound.stop(jumpId);
         plopSound.stop(plopId);
         fireSound.stop(fireId);
+        meowSound.stop(meowId);
     }
 
     /**
@@ -524,7 +551,7 @@ public class LevelController extends WorldController implements ContactListener 
             // create dead body
             DeadBody dead_body = new DeadBody(constants.get("cat"), dwidth, dheight);
             dead_body.setDrawScale(scale);
-            dead_body.setTexture(avatarTexture);
+            dead_body.setTexture(deadCatTexture);
             dead_body.setSensor(false);
             dead_body.setLinearVelocity(new Vector2(0,0));
             dead_body.setPosition(avatar.getPosition());

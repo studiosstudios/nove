@@ -12,6 +12,7 @@
         },
         "shared:goal":   "shared/goaldoor.png",
         "platform:cat":  "platform/cat.png",
+        "platform:deadCat": "platform/deadCat.png",
         "platform:rope":  "platform/ropebridge.png",
         "platform:barrier": "platform/barrier.png",
         "platform:bullet":  "platform/bullet.png",
@@ -27,7 +28,8 @@
     "sounds" : {
         "platform:jump" : "platform/jump.mp3",
         "platform:pew"  : "platform/pew.mp3",
-        "platform:plop" : "platform/plop.mp3"
+        "platform:plop" : "platform/plop.mp3",
+        "platform:meow" : "platform/meow.mp3"
     },
     "fonts": {
         "shared:retro": {

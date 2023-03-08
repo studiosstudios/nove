@@ -27,12 +27,19 @@
 		"density": 1.0,
 		"friction": 0.0,
 		"maxspeed": 6.5,
-		"jump_force": 1.6,
+		"jump_force": 1.5,
 		"jump_damping": 0.8,
-		"dash_force": 1,
+		"dash_force": 1.5,
 		"sensor": {
-			"shrink" : 0.9,
+			"shrink": 0.9
+		},
+		"ground_sensor": {
+			"shrink" : 0.6,
 			"height" : 0.05
+		},
+		"side_sensor": {
+			"shrink" : 0.6,
+			"width": 0.2
 		}
 	},
 	"bridge" : {
@@ -82,7 +89,7 @@
 		"friction" : 0.9,
 		"mass" : 200,
 		"boxes" : [
-			{"pos" :  [2, 4]}
+			{"pos" :  [7.5, 4]}
 		]
 	},
 	"flamethrower": {
