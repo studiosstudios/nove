@@ -54,7 +54,7 @@ public class LevelController extends WorldController implements ContactListener 
     /** Texture asset for the left part of a laser */
     private TextureRegion laserLeftTexture;
     /** Texture asset for the middle part of a laser */
-    private TextureRegion laserMiddleTexture;
+    private TextureRegion laserBeamTexture;
     /** Texture asset for the right part of a laser */
     private TextureRegion laserRightTexture;
     /** Texture asset for the dead cat */
@@ -156,7 +156,7 @@ public class LevelController extends WorldController implements ContactListener 
         flameTexture = new TextureRegion(directory.getEntry("platform:flame", Texture.class));
         flamethrowerTexture = new TextureRegion(directory.getEntry("platform:flamethrower", Texture.class));
         laserLeftTexture = new TextureRegion(directory.getEntry("platform:laserLeft", Texture.class));
-        laserMiddleTexture = new TextureRegion(directory.getEntry("platform:laserMiddle", Texture.class));
+        laserBeamTexture = new TextureRegion(directory.getEntry("platform:laserBeam", Texture.class));
         laserRightTexture = new TextureRegion(directory.getEntry("platform:laserRight", Texture.class));
         deadCatTexture = new TextureRegion((directory.getEntry("platform:deadCat", Texture.class)));
         backgroundTexture = new TextureRegion((directory.getEntry("platform:background", Texture.class)));
@@ -367,7 +367,7 @@ public class LevelController extends WorldController implements ContactListener 
             float x = laserJV.get("pos").getFloat(0);
             float y = laserJV.get("pos").getFloat(1);
             LaserBeam laser = new LaserBeam(constants.get("laser"), x, y, 8, dwidth,dheight,"laserbeam");
-            laser.setTexture(laserMiddleTexture);
+            laser.setTexture(laserBeamTexture);
             laser.setDrawScale(scale);
             addObject(laser);
         }
