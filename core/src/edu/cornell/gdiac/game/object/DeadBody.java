@@ -25,7 +25,7 @@ public class DeadBody extends CapsuleObstacle {
 
     private int burnTicks;
     private boolean burning;
-    public static final int TOTAL_BURN_TICKS = 1800;
+    public static final int TOTAL_BURN_TICKS = 900;
     /**
      * The initializing data (to avoid magic numbers)
      */
@@ -255,7 +255,6 @@ public class DeadBody extends CapsuleObstacle {
         Fixture sensorFixture = body.createFixture(sensorDef);
         sensorFixture.setUserData(this);
 
-
         return true;
     }
 
@@ -314,7 +313,8 @@ public class DeadBody extends CapsuleObstacle {
      */
     public void draw(GameCanvas canvas) {
         float effect = faceRight ? 1.0f : -1.0f;
-        canvas.draw(texture, Color.WHITE, origin.x, origin.y, getX() * drawScale.x, getY() * drawScale.y, getAngle(), effect, 1.0f);
+        Color color = new Color(1, 1, 1, 1f - ((float)burnTicks)/((float)TOTAL_BURN_TICKS));
+        canvas.draw(texture, color, origin.x, origin.y, getX() * drawScale.x, getY() * drawScale.y, getAngle(), effect, 1.0f);
     }
 
     /**

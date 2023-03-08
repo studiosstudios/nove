@@ -276,15 +276,30 @@ public class LevelController extends WorldController implements ContactListener 
         world.setGravity( new Vector2(0,defaults.getFloat("gravity",0)) );
 
 
-        //Add buttons
-        JsonValue buttonsJV = constants.get("button");
-        for (JsonValue buttonJV : buttonsJV.get("buttons")) {
-            float x = buttonJV.get("pos").getFloat(0);
-            float y = buttonJV.get("pos").getFloat(1);
-            String id = buttonJV.getString("id");
-            Button button = new Button(x, y, id, buttonTexture, scale, buttonsJV);
-            activatorList.add(button);
-            addObject(button);
+        //Add activators
+        JsonValue activatorsJV = constants.get("activator");
+        for (JsonValue activatorJV : activatorsJV.get("activators")) {
+            float x = activatorJV.get("pos").getFloat(0);
+            float y = activatorJV.get("pos").getFloat(1);
+            String type = activatorJV.getString("type");
+            String id = activatorJV.getString("id");
+            Activator activator;
+            switch (type){
+                case "button":
+                    activator = new Button(x, y, id, buttonTexture, scale, activatorsJV);
+                    break;
+                case "switch":
+                    activator = new Switch(x, y, id, buttonTexture, scale, activatorsJV);
+                    break;
+                case "timed":
+                    int duration = activatorJV.getInt("duration");
+                    activator = new TimedButton(x, y, id, duration, buttonTexture, scale, activatorsJV);
+                    break;
+                default:
+                    throw new RuntimeException(String.format("unrecognised activator type %s", type));
+            }
+            activatorList.add(activator);
+            addObject(activator);
         }
 
         // Add spikes
@@ -493,8 +508,7 @@ public class LevelController extends WorldController implements ContactListener 
                 }
 
                 if (fd2 instanceof Spikes) {
-                    DeadBody newDeadBody = die();
-//                    fixBodyToSpikes(newDeadBody, (Spikes) fd2, contact.getWorldManifold().getPoints());
+                    die();
                 }
                 if (fd2 == Flame.getSensorName()){
                     die();
@@ -587,6 +601,19 @@ public class LevelController extends WorldController implements ContactListener 
             avatar.decrementWalled();
         }
 
+        //Check for body
+        if (fd1 instanceof DeadBody) {
+            if (fd2 == Flame.getSensorName()) {
+                ((DeadBody) fd1).setBurning(false);
+            }
+
+        } else if (fd2 instanceof DeadBody) {
+           if (fd1 == Flame.getSensorName()) {
+                ((DeadBody) fd2).setBurning(false);
+            }
+
+        }
+
         // Check for button
         if (fd2 instanceof Activator) {
             ((Activator) fd2).removePress();
@@ -637,6 +664,7 @@ public class LevelController extends WorldController implements ContactListener 
                 dead_body.setTexture(deadCatTexture);
                 dead_body.setSensor(false);
                 dead_body.setLinearVelocity(avatar.getLinearVelocity());
+                dead_body.setLinearDamping(2f);
                 dead_body.setPosition(avatar.getPosition());
                 new_dead_body = dead_body;
                 addQueue.add(dead_body);

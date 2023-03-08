@@ -15,6 +15,8 @@ public class Spikes extends BoxObstacle {
 
     private PolygonShape sensorShape;
 
+    private PolygonShape solidShape;
+
     /** The initializing data (to avoid magic numbers) */
     private final JsonValue data;
 
@@ -25,6 +27,8 @@ public class Spikes extends BoxObstacle {
     private final boolean initialActive;
 
     private Fixture sensorFixture;
+
+    private Fixture solidFixture;
 
     private ObjectSet<Joint> joints = new ObjectSet<Joint>();
 
@@ -70,11 +74,20 @@ public class Spikes extends BoxObstacle {
 
 
     public boolean activatePhysics(World world){
-        Vector2 sensorCenter = new Vector2(0, getHeight() / 2);
+        Vector2 sensorCenter = new Vector2(data.get("sensor_offset").getFloat(0),
+                data.get("sensor_offset").getFloat(1));
         sensorShape = new PolygonShape();
         sensorShape.setAsBox(getWidth() / 2 * data.getFloat("sensor_width_scale"),
                 getHeight() / 2 * data.getFloat("sensor_height_scale"),
                 sensorCenter, 0.0f);
+
+        Vector2 solidCenter = new Vector2(data.get("solid_offset").getFloat(0),
+                data.get("solid_offset").getFloat(1));
+        solidShape = new PolygonShape();
+        solidShape.setAsBox(getWidth() / 2 * data.getFloat("solid_width_scale"),
+                getHeight() / 2 * data.getFloat("solid_height_scale"),
+                solidCenter, 0.0f);
+
         if (!super.activatePhysics(world)) {
             return false;
         }
@@ -86,6 +99,11 @@ public class Spikes extends BoxObstacle {
 
     protected void createFixtures(){
         super.createFixtures();
+
+        FixtureDef solidDef = new FixtureDef();
+        solidDef.density = 0;
+        solidDef.shape = solidShape;
+        solidFixture = body.createFixture( solidDef );
 
         //create sensor
         FixtureDef sensorDef = new FixtureDef();
@@ -102,6 +120,10 @@ public class Spikes extends BoxObstacle {
             body.destroyFixture(sensorFixture);
             sensorFixture = null;
         }
+        if (solidFixture != null) {
+            body.destroyFixture(solidFixture);
+            solidFixture = null;
+        }
     }
 
     /** destroy all joints connected to this spike
@@ -112,13 +134,14 @@ public class Spikes extends BoxObstacle {
         for (Joint j : joints) {
             world.destroyJoint(j);
         }
+        joints.clear();
     }
 
     public void addJoint(Joint joint){ joints.add(joint); }
 
 
     /**
-     * Draws the outline of the physics body.
+     * Draws the outline of the physics body.d
      *
      * This method can be helpful for understanding issues with collisions.
      *
@@ -127,6 +150,7 @@ public class Spikes extends BoxObstacle {
     public void drawDebug(GameCanvas canvas) {
         super.drawDebug(canvas);
         if (active) {
+            canvas.drawPhysics(solidShape, Color.YELLOW, getX(), getY(), getAngle(), drawScale.x, drawScale.y);
             canvas.drawPhysics(sensorShape, Color.RED, getX(), getY(), getAngle(), drawScale.x, drawScale.y);
         }
     }
