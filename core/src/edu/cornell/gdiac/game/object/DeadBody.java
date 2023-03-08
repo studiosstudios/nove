@@ -69,7 +69,7 @@ public class DeadBody extends CapsuleObstacle {
     /**
      * The physics shape of this object
      */
-    private PolygonShape sensorShape;
+    private CircleShape sensorShape;
 
     /**
      * Cache for internal force calculations
@@ -241,24 +241,20 @@ public class DeadBody extends CapsuleObstacle {
         // To determine whether or not the dead body is on the ground,
         // we create a thin sensor under the feet, which reports
         // collisions with the world but has no collision response.
-        Vector2 sensorCenter = new Vector2(0, -getHeight() / 2);
+        //TODO: put this in JSON
+        Vector2 sensorCenter = new Vector2();
         FixtureDef sensorDef = new FixtureDef();
-        sensorDef.density = data.getFloat("density", 0);
+        sensorDef.density = 0;
         sensorDef.isSensor = true;
-        sensorShape = new PolygonShape();
-        JsonValue sensorjv = data.get("ground_sensor");
-        sensorShape.setAsBox(sensorjv.getFloat("shrink", 0) * getWidth() / 2.0f,
-                sensorjv.getFloat("height", 0), sensorCenter, 0.0f);
+        sensorShape = new CircleShape();
+        sensorShape.setRadius(0.1f);
+        sensorShape.setPosition(sensorCenter);
         sensorDef.shape = sensorShape;
 
         // Ground sensor to represent our feet
         Fixture sensorFixture = body.createFixture(sensorDef);
-        sensorFixture.setUserData(getSensorName());
+        sensorFixture.setUserData(this);
 
-        //set user data as reference to self for contact listener
-        for (Fixture f : body.getFixtureList()){
-            f.setUserData(this);
-        }
 
         return true;
     }
@@ -330,6 +326,6 @@ public class DeadBody extends CapsuleObstacle {
      */
     public void drawDebug(GameCanvas canvas) {
         super.drawDebug(canvas);
-        canvas.drawPhysics(sensorShape, Color.RED, getX(), getY(), getAngle(), drawScale.x, drawScale.y);
+        canvas.drawPhysics(sensorShape, Color.RED, getX(), getY(), drawScale.x, drawScale.y);
     }
 }

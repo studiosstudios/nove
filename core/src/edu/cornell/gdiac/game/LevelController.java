@@ -392,7 +392,16 @@ public class LevelController extends WorldController implements ContactListener 
      */
     public void update(float dt) {
         while (!jointQueue.isEmpty()) {
-            world.createJoint(jointQueue.poll());
+            JointDef jdef = jointQueue.poll();
+            Joint joint = world.createJoint(jdef);
+
+            //add joint to joint list of spikes
+            //this is very jank and should be factored out for all gameobjects
+            if (jdef.bodyA.getUserData() instanceof Spikes){
+                ((Spikes) jdef.bodyA.getUserData()).addJoint(joint);
+            } else if (jdef.bodyB.getUserData() instanceof Spikes) {
+                ((Spikes) jdef.bodyB.getUserData()).addJoint(joint);
+            }
         }
 
         // Process actions in object model
@@ -416,7 +425,7 @@ public class LevelController extends WorldController implements ContactListener 
             a.updateActivated();
             if (activationRelations.containsKey(a.getID())){
                 for (Spikes s : activationRelations.get(a.getID())){
-                    s.setActive(a.isActive());
+                    s.setActive(a.isActive(), world);
                 }
             }
         }
@@ -516,6 +525,7 @@ public class LevelController extends WorldController implements ContactListener 
             } else if (fd1 instanceof Activator) {
                 ((Activator) fd1).addPress();
             }
+
         }catch (Exception e) {
             e.printStackTrace();
         }
@@ -576,6 +586,7 @@ public class LevelController extends WorldController implements ContactListener 
                 (avatar.getSideSensorName().equals(fd1) && avatar != bd2)) {
             avatar.decrementWalled();
         }
+
         // Check for button
         if (fd2 instanceof Activator) {
             ((Activator) fd2).removePress();

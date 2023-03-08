@@ -7,14 +7,13 @@ import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.physics.box2d.*;
 
 import com.badlogic.gdx.utils.JsonValue;
+import com.badlogic.gdx.utils.ObjectSet;
 import edu.cornell.gdiac.game.*;
 import edu.cornell.gdiac.game.obstacle.*;
 
 public class Spikes extends BoxObstacle {
 
     private PolygonShape sensorShape;
-
-    private static final String sensorName = "spikesTop";
 
     /** The initializing data (to avoid magic numbers) */
     private final JsonValue data;
@@ -26,6 +25,8 @@ public class Spikes extends BoxObstacle {
     private final boolean initialActive;
 
     private Fixture sensorFixture;
+
+    private ObjectSet<Joint> joints = new ObjectSet<Joint>();
 
     public Spikes(float x, float y, float angle, boolean active,
                   TextureRegion texture, Vector2 scale, JsonValue data){
@@ -52,7 +53,7 @@ public class Spikes extends BoxObstacle {
      * Sets the active status of the spikes.
      * @param activatorActive  whether the corresponding activators are active
      */
-    public void setActive(boolean activatorActive){
+    public void setActive(boolean activatorActive, World world){
 
         boolean next = initialActive ^ activatorActive;
         if (next && !active) {
@@ -63,6 +64,7 @@ public class Spikes extends BoxObstacle {
             //state switch from active to inactive
             active = false;
             releaseFixtures();
+            destroyJoints(world);
         }
     }
 
@@ -102,16 +104,17 @@ public class Spikes extends BoxObstacle {
         }
     }
 
-    /**
-     * Returns the name of the top sensor
-     *
-     * This is used by ContactListener
-     *
-     * @return the name of the ground sensor
-     */
-    public static String getSensorName() {
-        return sensorName;
+    /** destroy all joints connected to this spike
+     * is it weird that the spikes can access the world like this?
+     * potentially can be fixed with setActive returning a list of joints to destroy
+     * that the controller then destroys */
+    public void destroyJoints(World world){
+        for (Joint j : joints) {
+            world.destroyJoint(j);
+        }
     }
+
+    public void addJoint(Joint joint){ joints.add(joint); }
 
 
     /**
