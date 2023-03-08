@@ -81,7 +81,7 @@
 		"offset": [0.03125, -0.2],
 		"buttons": [
 			{"pos": [4, 2], "id" : "button1"},
-//			{"pos": [13, 5], "id" : "button2"}
+			{"pos": [13, 5], "id" : "button2"}
 		]
 
 	},

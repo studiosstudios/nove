@@ -22,6 +22,10 @@ import edu.cornell.gdiac.game.obstacle.*;
  * no other subclasses that we might loop through.
  */
 public class DeadBody extends CapsuleObstacle {
+
+    private int burnTicks;
+    private boolean burning;
+    public static final int TOTAL_BURN_TICKS = 1800;
     /**
      * The initializing data (to avoid magic numbers)
      */
@@ -204,13 +208,15 @@ public class DeadBody extends CapsuleObstacle {
         damping = data.getFloat("damping", 0);
         force = data.getFloat("force", 0);
         dash_force = data.getFloat("dash_force", 0);
-        ;
         sensorName = "deadBodyGroundSensor";
         this.data = data;
 
         // Gameplay attributes
+        burnTicks = 0;
+        burning = false;
         isGrounded = false;
         faceRight = true;
+
 
         setName("deadBody");
     }
@@ -248,6 +254,11 @@ public class DeadBody extends CapsuleObstacle {
         // Ground sensor to represent our feet
         Fixture sensorFixture = body.createFixture(sensorDef);
         sensorFixture.setUserData(getSensorName());
+
+        //set user data as reference to self for contact listener
+        for (Fixture f : body.getFixtureList()){
+            f.setUserData(this);
+        }
 
         return true;
     }
@@ -288,6 +299,16 @@ public class DeadBody extends CapsuleObstacle {
         // Apply cooldowns
 
         super.update(dt);
+        if (burning) {
+            burnTicks++;
+            if (burnTicks >= TOTAL_BURN_TICKS){
+                markRemoved(true);
+            }
+        }
+    }
+
+    public void setBurning(boolean burning){
+        this.burning = burning;
     }
 
     /**

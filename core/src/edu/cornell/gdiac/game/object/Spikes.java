@@ -91,7 +91,7 @@ public class Spikes extends BoxObstacle {
         sensorDef.isSensor = true;
         sensorDef.shape = sensorShape;
         sensorFixture = body.createFixture( sensorDef );
-        sensorFixture.setUserData(getSensorName());
+        sensorFixture.setUserData(this);
     }
 
     protected void releaseFixtures(){

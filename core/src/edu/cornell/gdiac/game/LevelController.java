@@ -11,6 +11,7 @@
 package edu.cornell.gdiac.game;
 
 import com.badlogic.gdx.math.*;
+import com.badlogic.gdx.physics.box2d.joints.WeldJointDef;
 import com.badlogic.gdx.utils.*;
 import com.badlogic.gdx.audio.*;
 import com.badlogic.gdx.graphics.*;
@@ -20,6 +21,7 @@ import edu.cornell.gdiac.game.object.*;
 
 import edu.cornell.gdiac.assets.AssetDirectory;
 import edu.cornell.gdiac.game.obstacle.*;
+import edu.cornell.gdiac.util.PooledList;
 
 import javax.swing.*;
 import java.util.HashMap;
@@ -92,6 +94,9 @@ public class LevelController extends WorldController implements ContactListener 
     private Array<Activator> activatorList;
     private Array<Spikes> spikesList;
     private Array<DeadBody> deadBodyList;
+
+    /** queue to add joints to the world created in beginContact() */
+    protected PooledList<JointDef> jointQueue = new PooledList<JointDef>();
 
     /** hashmap to represent activator-spike relationships:
      *   keys are activator ids specified in JSON*/
@@ -180,6 +185,7 @@ public class LevelController extends WorldController implements ContactListener 
         }
         objects.clear();
         addQueue.clear();
+        jointQueue.clear();
         world.dispose();
 
         activatorList.clear();
@@ -276,7 +282,7 @@ public class LevelController extends WorldController implements ContactListener 
             float x = buttonJV.get("pos").getFloat(0);
             float y = buttonJV.get("pos").getFloat(1);
             String id = buttonJV.getString("id");
-            TimedButton button = new TimedButton(x, y, id, 120, buttonTexture, scale, buttonsJV);
+            Button button = new Button(x, y, id, buttonTexture, scale, buttonsJV);
             activatorList.add(button);
             addObject(button);
         }
@@ -368,9 +374,7 @@ public class LevelController extends WorldController implements ContactListener 
             died = false;
             new_dead_body.setFacingRight(avatar.isFacingRight());
             avatar.setPosition(respawnPos);
-            addObject(new_dead_body);
             deadBodyList.add(new_dead_body);
-
         }
 
         return true;
@@ -387,6 +391,10 @@ public class LevelController extends WorldController implements ContactListener 
      * @param dt	Number of seconds since last animation frame
      */
     public void update(float dt) {
+        while (!jointQueue.isEmpty()) {
+            world.createJoint(jointQueue.poll());
+        }
+
         // Process actions in object model
         avatar.setMovement(InputController.getInstance().getHorizontal() *avatar.getForce() * (avatar.getIsClimbing() ? 0 : 1));
         avatar.setVerticalMovement(InputController.getInstance().getVertical() * avatar.getForce());
@@ -412,6 +420,12 @@ public class LevelController extends WorldController implements ContactListener 
                 }
             }
         }
+
+        //Update objects
+        for (DeadBody d : deadBodyList){
+            d.update(dt);
+        }
+
     }
 
     /**
@@ -437,32 +451,63 @@ public class LevelController extends WorldController implements ContactListener 
             Obstacle bd1 = (Obstacle) body1.getUserData();
             Obstacle bd2 = (Obstacle) body2.getUserData();
 
-            // See if we have landed on the ground.
-            if ((avatar.getGroundSensorName().equals(fd2) && avatar != bd1) ||
-                    (avatar.getGroundSensorName().equals(fd1) && avatar != bd2)) {
-                avatar.setGrounded(true);
-                sensorFixtures.add(avatar == bd1 ? fix2 : fix1); // Could have more than one ground
+            //cat collisions
+            if (bd1 == avatar || bd2 == avatar) {
+
+                //ensure bd1 and fd1 are cat body and fixtures
+                if (bd2 == avatar) {
+                    //don't need to swap bd1 and bd2 because we are assuming bd1 == avatar
+                    bd2 = bd1;
+
+                    Object temp = fd1;
+                    fd1 = fd2;
+                    fd2 = temp;
+                }
+
+                // See if we have landed on the ground.
+                    if (avatar.getGroundSensorName().equals(fd1)) {
+                        avatar.setGrounded(true);
+                        sensorFixtures.add(fix2); // Could have more than one ground
+                }
+
+                // See if we are touching a wall
+                if (avatar.getSideSensorName().equals(fd1) && avatar != bd2) {
+                    avatar.incrementWalled();
+                }
+
+                // Check for win condition
+                if (bd2 == goalDoor) {
+                    setComplete(true);
+                }
+                if (bd2 == retDoor) {
+                    setRet(true);
+                }
+
+                if (fd2 instanceof Spikes) {
+                    DeadBody newDeadBody = die();
+//                    fixBodyToSpikes(newDeadBody, (Spikes) fd2, contact.getWorldManifold().getPoints());
+                }
+                if (fd2 == Flame.getSensorName()){
+                    die();
+                }
+
             }
 
-            // See if we are touching a wall
-            if ((avatar.getSideSensorName().equals(fd2) && avatar != bd1) ||
-                    (avatar.getSideSensorName().equals(fd1) && avatar != bd2)) {
-                avatar.incrementWalled();
-            }
+            //Check for body
+            if (fd1 instanceof DeadBody) {
+                if (fd2 instanceof Spikes) {
+                    fixBodyToSpikes((DeadBody) fd1, (Spikes) fd2, contact.getWorldManifold().getPoints());
+                } else if (fd2 == Flame.getSensorName()) {
+                    ((DeadBody) fd1).setBurning(true);
+                }
 
-            // Check for win condition
-            if ((bd1 == avatar && bd2 == goalDoor) ||
-                    (bd1 == goalDoor && bd2 == avatar)) {
-                setComplete(true);
-            }
-            if ((bd1 == avatar && bd2 == retDoor) ||
-                    (bd1 == retDoor && bd2 == avatar)) {
-                setRet(true);
-            }
-            // Check for death
-            if ((bd1 == avatar && (fd2 == Spikes.getSensorName() || fd2 == Flame.getSensorName())) ||
-                    (bd2 == avatar && (fd1 == Spikes.getSensorName() || fd1 == Flame.getSensorName()))) {
-                die();
+            } else if (fd2 instanceof DeadBody) {
+                if (fd1 instanceof Spikes) {
+                    fixBodyToSpikes((DeadBody) fd2, (Spikes) fd1, contact.getWorldManifold().getPoints());
+                } else if (fd1 == Flame.getSensorName()) {
+                    ((DeadBody) fd2).setBurning(true);
+                }
+
             }
 
             // Check for activator
@@ -476,12 +521,26 @@ public class LevelController extends WorldController implements ContactListener 
         }
     }
 
-    private void spikesDeath(DeadBody deadBody, Spikes spikes){
-
-    }
-
-    private void flameDeath(DeadBody deadBody, Flame flame){
-
+    private void fixBodyToSpikes(DeadBody deadbody, Spikes spikes, Vector2[] points) {
+        switch ((int) (spikes.getAngle() * 180/Math.PI)) {
+            case 0:
+            case 90:
+            case 270:
+                WeldJointDef wjoint = new WeldJointDef();
+                for (Vector2 contactPoint : points) {
+                    wjoint.bodyA = deadbody.getBody();
+                    wjoint.bodyB = spikes.getBody();
+                    wjoint.localAnchorA.set(deadbody.getBody().getLocalPoint(contactPoint));
+                    wjoint.localAnchorB.set(spikes.getBody().getLocalPoint(contactPoint));
+                    wjoint.collideConnected = false;
+                    jointQueue.add(wjoint);
+                }
+                break;
+            case 180:
+                break;
+            default:
+                throw new RuntimeException("impossible spikes angle");
+        }
     }
 
     /**
@@ -532,7 +591,6 @@ public class LevelController extends WorldController implements ContactListener 
     }
     /** Unused ContactListener method */
     public void preSolve(Contact contact, Manifold oldManifold) {
-
     }
 
     /**
@@ -550,7 +608,6 @@ public class LevelController extends WorldController implements ContactListener 
 
     /**
      * Called when a player dies. Removes all input but keeps velocities.
-     * TODO: create and return body to be used in preSolve (for fixing to spikes)
      */
     private DeadBody die(){
         if (!died) {
@@ -571,6 +628,7 @@ public class LevelController extends WorldController implements ContactListener 
                 dead_body.setLinearVelocity(avatar.getLinearVelocity());
                 dead_body.setPosition(avatar.getPosition());
                 new_dead_body = dead_body;
+                addQueue.add(dead_body);
                 return dead_body;
             }
         }
