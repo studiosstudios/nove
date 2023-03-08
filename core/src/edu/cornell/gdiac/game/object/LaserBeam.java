@@ -30,6 +30,7 @@ public class LaserBeam extends ComplexObstacle {
     protected float spacing = 0.0f;
     private static final String sensorName = "beamSensor";
     private PolygonShape sensorShape;
+    private Vector2 startPos;
 
 
 
@@ -50,6 +51,7 @@ public class LaserBeam extends ComplexObstacle {
 
         float x0 = x;
         float y0 = y;
+        startPos = new Vector2(x, y);
         planksize = new Vector2(lwidth,lheight);
         setBodyType(BodyDef.BodyType.StaticBody);
         linksize = planksize.x;
@@ -183,15 +185,17 @@ public class LaserBeam extends ComplexObstacle {
         if (!super.activatePhysics(world)) {
             return false;
         }
-        Vector2 sensorCenter = new Vector2(0, 0);
-        FixtureDef sensorDef = new FixtureDef();
-        sensorDef.density = 0;
-        sensorDef.isSensor = true;
-        sensorShape = new PolygonShape();
-        sensorShape.setAsBox(dimension.x, dimension.y+1, sensorCenter, 0.0f);
-        sensorDef.shape = sensorShape;
-//        Fixture sensorFixture = body.createFixture( sensorDef );
-//        sensorFixture.setUserData(getSensorName());
+        for (Joint joint : joints) {
+            Vector2 sensorCenter = new Vector2(0,0);
+            FixtureDef sensorDef = new FixtureDef();
+            sensorDef.density = 0;
+            sensorDef.isSensor = true;
+            sensorShape = new PolygonShape();
+            sensorShape.setAsBox(dimension.x*0.2f*0.08f, dimension.y, sensorCenter, 0.0f);
+            sensorDef.shape = sensorShape;
+            Fixture sensorFixture = joint.getBodyA().createFixture(sensorDef);
+            sensorFixture.setUserData(getSensorName());
+        }
         return true;
     }
 
