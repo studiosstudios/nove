@@ -568,7 +568,7 @@ public class LevelController extends WorldController implements ContactListener 
                 dead_body.setDrawScale(scale);
                 dead_body.setTexture(deadCatTexture);
                 dead_body.setSensor(false);
-                dead_body.setLinearVelocity(new Vector2(0, 0));
+                dead_body.setLinearVelocity(avatar.getLinearVelocity());
                 dead_body.setPosition(avatar.getPosition());
                 new_dead_body = dead_body;
                 return dead_body;

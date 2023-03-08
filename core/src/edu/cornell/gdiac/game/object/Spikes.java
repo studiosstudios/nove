@@ -40,6 +40,7 @@ public class Spikes extends BoxObstacle {
 
         setAngle((float) (angle * Math.PI/180));
         setBodyType(BodyDef.BodyType.StaticBody);
+        setSensor(true);
         setFixedRotation(true);
         setName("spikes");
         setDrawScale(scale);
