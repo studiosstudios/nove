@@ -10,16 +10,21 @@ import com.badlogic.gdx.utils.JsonValue;
 import edu.cornell.gdiac.game.*;
 import edu.cornell.gdiac.game.obstacle.*;
 
-public class Button extends Activator {
+public class Switch extends Activator {
 
-    public Button(float x, float y, String id, TextureRegion texture, Vector2 scale, JsonValue data){
+    private boolean prevPressed;
+    public Switch(float x, float y, String id, TextureRegion texture, Vector2 scale, JsonValue data){
         super(x, y, id, texture, scale, data);
-        setName("button");
+        prevPressed = false;
+        setName("switch");
     }
 
-    /** for a button, active = pressed */
+    /** for a switch, active is toggled every time button is pressed */
     public void updateActivated(){
-        active = isPressed();
+        if (isPressed() && !prevPressed) {
+            active = !active;
+        }
+        prevPressed = isPressed();
     }
 
 }
