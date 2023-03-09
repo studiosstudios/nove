@@ -15,8 +15,6 @@ import edu.cornell.gdiac.game.obstacle.ComplexObstacle;
 import javax.swing.*;
 
 public class Flamethrower extends ComplexObstacle {
-    /** The initializing data (to avoid magic numbers) */
-    private final JsonValue data;
     protected Flame flame;
 
     protected BoxObstacle flameBase;
@@ -41,15 +39,13 @@ public class Flamethrower extends ComplexObstacle {
         isShooting = shooting;
     }
 
-    public Flamethrower(JsonValue data, float x, float y, float angle, Vector2 scale, TextureRegion flamethrowerTexture, TextureRegion flameTexture) {
-        super(x,y);
+    public Flamethrower(TextureRegion flamethrowerTexture, TextureRegion flameTexture, Vector2 scale, JsonValue data) {
+        super();
 //        setName("flamethrower");
-        assert angle % 90 == 0;
-        this.data = data;
-        this.setFixedRotation(false);
-        flame = new Flame(x, y,angle, scale, flameTexture,data);
+        this.objectData = data;
 
-        flameBase = new BoxObstacle(x, y-(flame.getHeight()*0.65f), flamethrowerTexture.getRegionWidth()/scale.x, flamethrowerTexture.getRegionHeight()/scale.y);
+        this.setFixedRotation(false);
+        flameBase = new BoxObstacle(flamethrowerTexture.getRegionWidth()/scale.x, flamethrowerTexture.getRegionHeight()/scale.y);
         flameBase.setDrawScale(scale);
         flameBase.setTexture(flamethrowerTexture);
         flameBase.setBodyType(BodyDef.BodyType.StaticBody);
@@ -58,9 +54,12 @@ public class Flamethrower extends ComplexObstacle {
         flameBase.setRestitution(0f);
         flameBase.setName("flamethrower");
         flameBase.setDensity(0f);
-        bodies.add(flameBase);
 
+        flame = new Flame(flameTexture, scale, data);
+        bodies.add(flameBase);
         bodies.add(flame);
+
+        init();
 //        this.setAngle((float) (angle * Math.PI/180));
     }
 
@@ -99,5 +98,20 @@ public class Flamethrower extends ComplexObstacle {
      */
     public void update(float dt) {
 
+    }
+
+    @Override
+    public void draw(GameCanvas canvas){
+        if (activated){
+            super.draw(canvas);
+        }
+    }
+
+    @Override
+    public void init(){
+        super.init();
+        flameBase.setX(objectData.get("pos").getFloat(0));
+        flameBase.setY(objectData.get("pos").getFloat(1) +
+                (flame.getHeight()*objectConstants.getFloat("base_y_offset_scale")));
     }
 }

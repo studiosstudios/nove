@@ -877,7 +877,7 @@ public abstract class SimpleObstacle extends Obstacle {
 	 * primary purpose is to adjust changes to the fixture, which have to take place 
 	 * after collision.
 	 *
-	 * @param dt Timing values from parent loop
+	 * @param delta Timing values from parent loop
 	 */
 	public void update(float delta) {
 		// Recreate the fixture object if dimensions changed.
@@ -885,4 +885,11 @@ public abstract class SimpleObstacle extends Obstacle {
 			createFixtures();
 		}
 	}
+
+
+	/** method called when object switches from inactive to active */
+	public void activated(World world){}
+
+	/** method called when object switches from active to inactive */
+	public void deactivated(World world){};
 }

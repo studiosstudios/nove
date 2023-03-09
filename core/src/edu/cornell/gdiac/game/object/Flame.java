@@ -15,8 +15,6 @@ public class Flame extends BoxObstacle {
 
     private static final String sensorName = "flameSensor";
 
-    /** The initializing data (to avoid magic numbers) */
-    private final JsonValue data;
     /**
      * Returns the name of the top sensor
      *
@@ -27,11 +25,11 @@ public class Flame extends BoxObstacle {
     public static String getSensorName() {
         return sensorName;
     }
-    public Flame(float x, float y, float angle, Vector2 scale, TextureRegion texture, JsonValue data) {
-        super(x, y, texture.getRegionWidth()/scale.x, texture.getRegionHeight()/scale.y);
-        this.data = data;
+    public Flame(TextureRegion texture, Vector2 scale, JsonValue data) {
+        super(texture.getRegionWidth()/scale.x, texture.getRegionHeight()/scale.y);
+
+        objectData = data;
         this.scale = scale;
-        assert angle % 90 == 0;
 //        setAngle((float) (angle * Math.PI/180));
         setBodyType(BodyDef.BodyType.StaticBody);
 //        setFixedRotation(true);
@@ -39,6 +37,7 @@ public class Flame extends BoxObstacle {
         setDrawScale(scale);
         setTexture(texture);
         setSensor(true);
+        init();
     }
 
     public boolean activatePhysics(World world) {
@@ -50,8 +49,8 @@ public class Flame extends BoxObstacle {
         sensorDef.density = 0;
         sensorDef.isSensor = true;
         sensorShape = new PolygonShape();
-        sensorShape.setAsBox(getWidth()*0.5f*0.9f,
-                getHeight()*0.5f,
+        sensorShape.setAsBox(getWidth()*objectConstants.get("flame_sensor_scale").getFloat(0),
+                getHeight()*objectConstants.get("flame_sensor_scale").getFloat(1),
                 sensorCenter, 0.0f);
         sensorDef.shape = sensorShape;
         Fixture sensorFixture = body.createFixture( sensorDef );
@@ -68,5 +67,12 @@ public class Flame extends BoxObstacle {
     public void drawDebug(GameCanvas canvas) {
         super.drawDebug(canvas);
         canvas.drawPhysics(sensorShape, Color.RED,getX(),getY(),getAngle(),drawScale.x,drawScale.y);
+    }
+
+    @Override
+    public void init() {
+        super.init();
+        setX(objectData.get("pos").getFloat(0));
+        setY(objectData.get("pos").getFloat(1));
     }
 }

@@ -1,5 +1,6 @@
 package edu.cornell.gdiac.game.obstacle;
 
+import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.JsonValue;
 
 
@@ -9,41 +10,56 @@ import com.badlogic.gdx.utils.JsonValue;
  */
 public abstract class GameObject {
     /** if the object is initially activated */
-    private final boolean initialActivation;
+    private boolean initialActivation;
 
     /** if the object is currently activated */
-    private boolean activated;
+    protected boolean activated;
 
-    /** The initializing data (to avoid magic numbers) */
-    private final JsonValue data;
+    /** The initialization data of this game object */
+    protected JsonValue objectData;
 
-    public GameObject(boolean activated, JsonValue data){
-        this.data = data;
-        this.activated = activated;
-        initialActivation = activated;
+    /** constants shared by all objects of this class (to avoid magic numbers) */
+    protected static JsonValue objectConstants;
+
+    protected GameObject(){
+
     }
 
     /**
-     * Sets the active status of the object.
+     * Sets the active status of the object based on the output from an activator/s.
      * @param activator  whether the corresponding activators are active
      */
-    public void setActive(boolean activator){
-
+    public void updateActivated(boolean activator, World world){
         boolean next = initialActivation ^ activator;
         if (next && !activated) {
             //state switch from inactive to active
             activated = true;
-            activated();
+            activated(world);
         } else if (!next && activated){
             //state switch from active to inactive
             activated = false;
-            deactivated();
+            deactivated(world);
         }
     }
 
-    public abstract void activated();
+    public void setActivated(boolean activated) {this.activated = activated;}
+    public boolean isActivated() { return activated; }
 
-    public abstract void deactivated();
+    /** method called when object switches from inactive to active */
+    public abstract void activated(World world);
 
-    public abstract void reset();
+    /** method called when object switches from active to inactive */
+    public abstract void deactivated(World world);
+
+    public static void setConstants(JsonValue constants){ objectConstants = constants; }
+
+    public void init(){
+        if (objectData == null) {
+            activated = false;
+        } else {
+            activated = objectData.getBoolean("active", false);
+            initialActivation = activated;
+        }
+    }
+
 }
