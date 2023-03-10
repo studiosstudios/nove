@@ -2,7 +2,6 @@ package edu.cornell.gdiac.game.object;
 
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.math.*;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.physics.box2d.*;
 
@@ -11,8 +10,9 @@ import com.badlogic.gdx.utils.ObjectSet;
 import edu.cornell.gdiac.game.*;
 import edu.cornell.gdiac.game.obstacle.*;
 
-public class Spikes extends BoxObstacle {
+public class Spikes extends BoxObstacle implements Activatable {
 
+    protected static JsonValue objectConstants;
     private PolygonShape sensorShape;
 
     private PolygonShape solidShape;
@@ -22,6 +22,9 @@ public class Spikes extends BoxObstacle {
     private Fixture solidFixture;
 
     private ObjectSet<Joint> joints = new ObjectSet<Joint>();
+
+    private boolean activated;
+
 
     public Spikes(TextureRegion texture, Vector2 scale, JsonValue data){
         super(texture.getRegionWidth()/scale.x,
@@ -34,9 +37,25 @@ public class Spikes extends BoxObstacle {
         setDrawScale(scale);
         setTexture(texture);
 
-        this.objectData = data;
-        init();
+        Vector2 sensorCenter = new Vector2(objectConstants.get("sensor_offset").getFloat(0),
+                objectConstants.get("sensor_offset").getFloat(1));
+        sensorShape = new PolygonShape();
+        sensorShape.setAsBox(getWidth() / 2 * objectConstants.getFloat("sensor_width_scale"),
+                getHeight() / 2 * objectConstants.getFloat("sensor_height_scale"),
+                sensorCenter, 0.0f);
+
+        Vector2 solidCenter = new Vector2(objectConstants.get("solid_offset").getFloat(0),
+                objectConstants.get("solid_offset").getFloat(1));
+        solidShape = new PolygonShape();
+        solidShape.setAsBox(getWidth() / 2 * objectConstants.getFloat("solid_width_scale"),
+                getHeight() / 2 * objectConstants.getFloat("solid_height_scale"),
+                solidCenter, 0.0f);
+
+        setX(data.get("pos").getFloat(0)+objectConstants.get("offset").getFloat(0));
+        setY(data.get("pos").getFloat(1)+objectConstants.get("offset").getFloat(1));
+        setAngle((float) (data.getFloat("angle") * Math.PI/180));
     }
+
 
     @Override
     public void activated(World world){
@@ -125,27 +144,10 @@ public class Spikes extends BoxObstacle {
     }
 
     @Override
-    public void init(){
-        super.init();
-        Vector2 sensorCenter = new Vector2(objectConstants.get("sensor_offset").getFloat(0),
-                objectConstants.get("sensor_offset").getFloat(1));
-        sensorShape = new PolygonShape();
-        sensorShape.setAsBox(getWidth() / 2 * objectConstants.getFloat("sensor_width_scale"),
-                getHeight() / 2 * objectConstants.getFloat("sensor_height_scale"),
-                sensorCenter, 0.0f);
+    public void setActivated(boolean activated){ this.activated = activated; }
 
-        Vector2 solidCenter = new Vector2(objectConstants.get("solid_offset").getFloat(0),
-                objectConstants.get("solid_offset").getFloat(1));
-        solidShape = new PolygonShape();
-        solidShape.setAsBox(getWidth() / 2 * objectConstants.getFloat("solid_width_scale"),
-                getHeight() / 2 * objectConstants.getFloat("solid_height_scale"),
-                solidCenter, 0.0f);
+    public static void setConstants(JsonValue constants) { objectConstants = constants; }
 
-        setX(objectData.get("pos").getFloat(0)+objectConstants.get("offset").getFloat(0));
-        setY(objectData.get("pos").getFloat(1)+objectConstants.get("offset").getFloat(1));
-        setAngle((float) (objectData.getFloat("angle") * Math.PI/180));
-    }
-
-
-
+    @Override
+    public boolean isActivated() { return activated; }
 }

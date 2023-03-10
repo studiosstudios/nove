@@ -16,7 +16,8 @@ public class TimedButton extends Activator {
     private int totalDurationTicks;
     public TimedButton(TextureRegion texture, Vector2 scale, JsonValue data){
         super(texture, scale, data);
-
+        totalDurationTicks = data.getInt("duration");
+        pressedTicks = 0;
         setName("timedButton");
     }
 
@@ -28,12 +29,6 @@ public class TimedButton extends Activator {
             pressedTicks = Math.max(0, pressedTicks - 1);
         }
         active = pressedTicks > 0;
-    }
-
-    public void init(){
-        super.init();
-        totalDurationTicks = objectData.getInt("duration");
-        pressedTicks = 0;
     }
 
 }

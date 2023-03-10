@@ -100,8 +100,8 @@ public class LevelController extends WorldController implements ContactListener 
     public boolean isRet;
 
     /** object lists - in the future this will be one list maybe */
-    private Array<Activator> activatorArray;
-    private Array<GameObject> gameObjectArray;
+    private Array<Activator> activators;
+    private Array<ActivatableWrapper> activatables;
     private Array<DeadBody> deadBodyArray;
 
     /** queue to add joints to the world created in beginContact() */
@@ -109,7 +109,7 @@ public class LevelController extends WorldController implements ContactListener 
 
     /** hashmap to represent activator-spike relationships:
      *   keys are activator ids specified in JSON*/
-    private HashMap<String, Array<GameObject>> activationRelations;
+    private HashMap<String, Array<ActivatableWrapper>> activationRelations;
 
     private int numLives;
     private static final int MAX_NUM_LIVES = 4;
@@ -131,10 +131,10 @@ public class LevelController extends WorldController implements ContactListener 
 //        System.out.println("ret set to false in Level Controller");
         setRet(false);
         setFailure(false);
-        activatorArray = new Array<Activator>();
-        gameObjectArray = new Array<GameObject>();
+        activators = new Array<Activator>();
+        activatables = new Array<ActivatableWrapper>();
         deadBodyArray = new Array<DeadBody>();
-        activationRelations = new HashMap<String, Array<GameObject>>();
+        activationRelations = new HashMap<String, Array<ActivatableWrapper>>();
         world.setContactListener(this);
         sensorFixtures = new ObjectSet<Fixture>();
         this.level = level;
@@ -201,8 +201,8 @@ public class LevelController extends WorldController implements ContactListener 
         jointQueue.clear();
         world.dispose();
 
-        activatorArray.clear();
-        gameObjectArray.clear();
+        activators.clear();
+        activatables.clear();
         deadBodyArray.clear();
 
         numLives = MAX_NUM_LIVES;
@@ -226,7 +226,7 @@ public class LevelController extends WorldController implements ContactListener 
         dwidth  = goalTile.getRegionWidth()/scale.x;
         dheight = goalTile.getRegionHeight()/scale.y;
 
-        activationRelations = new HashMap<String, Array<GameObject>>();
+        activationRelations = new HashMap<String, Array<ActivatableWrapper>>();
 
         JsonValue goal = levelJV.get("goal");
         JsonValue goalpos = goal.get("pos");
@@ -305,7 +305,7 @@ public class LevelController extends WorldController implements ContactListener 
                 default:
                     throw new RuntimeException("unrecognised activator type");
             }
-            activatorArray.add(activator);
+            activators.add(activator);
             addObject(activator);
         }
 
@@ -356,18 +356,21 @@ public class LevelController extends WorldController implements ContactListener 
 
     }
 
-    private void loadObject(GameObject object, JsonValue objectJV){
+    private void loadObject(Activatable object, JsonValue objectJV){
+
+        addObject((Obstacle) object);
+
         String activatorID = objectJV.getString("activatorID", "");
+        ActivatableWrapper aObject = new ActivatableWrapper(object, objectJV);
         if (!activatorID.equals("")) {
             if (activationRelations.containsKey(activatorID)) {
-                activationRelations.get(activatorID).add(object);
+                activationRelations.get(activatorID).add(aObject);
             } else {
-                activationRelations.put(activatorID, new Array<GameObject>(new GameObject[]{object}));
+                activationRelations.put(activatorID, new Array<>(new ActivatableWrapper[]{aObject}));
             }
         }
 
-        gameObjectArray.add(object);
-        addObject((Obstacle) object);
+        activatables.add(aObject);
     }
 
     /**
@@ -442,10 +445,10 @@ public class LevelController extends WorldController implements ContactListener 
         }
 
         // Process buttons
-        for (Activator a : activatorArray){
+        for (Activator a : activators){
             a.updateActivated();
             if (activationRelations.containsKey(a.getID())){
-                for (GameObject s : activationRelations.get(a.getID())){
+                for (ActivatableWrapper s : activationRelations.get(a.getID())){
                     s.updateActivated(a.isActive(), world);
                 }
             }

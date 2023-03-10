@@ -1,7 +1,6 @@
 package edu.cornell.gdiac.game.object;
 
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.Vector;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.Joint;
@@ -12,15 +11,17 @@ import edu.cornell.gdiac.game.GameCanvas;
 import edu.cornell.gdiac.game.obstacle.BoxObstacle;
 import edu.cornell.gdiac.game.obstacle.ComplexObstacle;
 
-import javax.swing.*;
+public class Flamethrower extends ComplexObstacle implements Activatable {
+    protected static JsonValue objectConstants;
 
-public class Flamethrower extends ComplexObstacle {
     protected Flame flame;
 
     protected BoxObstacle flameBase;
 
     /** Whether the flamethrower object is on and shooting a flame */
     private boolean isShooting;
+
+    private boolean activated;
 
     /**
      * Returns true if the flamethrower if shooting
@@ -42,7 +43,6 @@ public class Flamethrower extends ComplexObstacle {
     public Flamethrower(TextureRegion flamethrowerTexture, TextureRegion flameTexture, Vector2 scale, JsonValue data) {
         super();
 //        setName("flamethrower");
-        this.objectData = data;
 
         this.setFixedRotation(false);
         flameBase = new BoxObstacle(flamethrowerTexture.getRegionWidth()/scale.x, flamethrowerTexture.getRegionHeight()/scale.y);
@@ -59,7 +59,10 @@ public class Flamethrower extends ComplexObstacle {
         bodies.add(flameBase);
         bodies.add(flame);
 
-        init();
+        flameBase.setX(data.get("pos").getFloat(0));
+        flameBase.setY(data.get("pos").getFloat(1) +
+                (flame.getHeight()*objectConstants.getFloat("base_y_offset_scale")));
+
 //        this.setAngle((float) (angle * Math.PI/180));
     }
 
@@ -100,6 +103,14 @@ public class Flamethrower extends ComplexObstacle {
 
     }
 
+    /** TODO: turn on flames */
+    @Override
+    public void activated(World world){}
+
+    /** TODO: turn off flames */
+    @Override
+    public void deactivated(World world){}
+
     @Override
     public void draw(GameCanvas canvas){
         if (activated){
@@ -108,10 +119,10 @@ public class Flamethrower extends ComplexObstacle {
     }
 
     @Override
-    public void init(){
-        super.init();
-        flameBase.setX(objectData.get("pos").getFloat(0));
-        flameBase.setY(objectData.get("pos").getFloat(1) +
-                (flame.getHeight()*objectConstants.getFloat("base_y_offset_scale")));
-    }
+    public void setActivated(boolean activated){ this.activated = activated; }
+
+    @Override
+    public boolean isActivated() { return activated; }
+
+    public static void setConstants(JsonValue constants) { objectConstants = constants; }
 }

@@ -886,10 +886,4 @@ public abstract class SimpleObstacle extends Obstacle {
 		}
 	}
 
-
-	/** method called when object switches from inactive to active */
-	public void activated(World world){}
-
-	/** method called when object switches from active to inactive */
-	public void deactivated(World world){};
 }

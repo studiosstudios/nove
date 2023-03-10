@@ -36,7 +36,7 @@ import edu.cornell.gdiac.game.*;  // For GameCanvas
  * to unify common functionality. In particular, it wraps the body and 
  * and fixture information into a single interface.
  */
-public abstract class Obstacle extends GameObject {
+public abstract class Obstacle {
 	/// Initialization structures to store body information
 	/** Stores the body information for this shape */
 	protected BodyDef bodyinfo;
@@ -924,7 +924,6 @@ public abstract class Obstacle extends GameObject {
 	 * @param y Initial y position in world coordinates
 	 */
 	protected Obstacle(float x, float y) {
-		super();
 		// Object has yet to be deactivated
 		toRemove = false;
 		

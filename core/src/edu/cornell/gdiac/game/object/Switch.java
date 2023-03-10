@@ -15,6 +15,7 @@ public class Switch extends Activator {
     private boolean prevPressed;
     public Switch(TextureRegion texture, Vector2 scale, JsonValue data){
         super(texture, scale, data);
+        prevPressed = false;
         setName("switch");
     }
 
@@ -24,11 +25,6 @@ public class Switch extends Activator {
             active = !active;
         }
         prevPressed = isPressed();
-    }
-
-    public void init(){
-        super.init();
-        prevPressed = false;
     }
 
 }

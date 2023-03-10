@@ -7,8 +7,12 @@ import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.JsonValue;
 import edu.cornell.gdiac.game.obstacle.BoxObstacle;
 
-public class PushableBox extends BoxObstacle {
+public class PushableBox extends BoxObstacle implements Activatable {
 
+    protected static JsonValue objectConstants;
+    private boolean activated;
+
+    public static void setConstants(JsonValue constants) { objectConstants = constants; }
 
     public PushableBox(TextureRegion texture, Vector2 scale, JsonValue data){
         super(texture.getRegionWidth()/scale.x,
@@ -20,13 +24,12 @@ public class PushableBox extends BoxObstacle {
         setDrawScale(scale);
         setTexture(texture);;
 
-        this.objectData = data;
 
-        setFriction(objectData.getFloat("friction", 0));
-        setDensity(objectData.getFloat("density", 0));
-        setMass(objectData.getFloat("mass", 0));
-
-        init();
+        setFriction(data.getFloat("friction", 0));
+        setDensity(data.getFloat("density", 0));
+        setMass(data.getFloat("mass", 0));
+        setX(data.get("pos").getFloat(0)+objectConstants.get("offset").getFloat(0));
+        setY(data.get("pos").getFloat(1)+objectConstants.get("offset").getFloat(1));
     }
 
     @Override
@@ -40,9 +43,8 @@ public class PushableBox extends BoxObstacle {
     }
 
     @Override
-    public void init(){
-        setX(objectData.get("pos").getFloat(0)+objectConstants.get("offset").getFloat(0));
-        setY(objectData.get("pos").getFloat(1)+objectConstants.get("offset").getFloat(1));
-    }
+    public void setActivated(boolean activated) {this.activated = activated;}
 
+    @Override
+    public boolean isActivated() { return activated; }
 }

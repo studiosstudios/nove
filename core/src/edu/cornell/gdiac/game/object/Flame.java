@@ -9,6 +9,8 @@ import edu.cornell.gdiac.game.GameCanvas;
 import edu.cornell.gdiac.game.obstacle.BoxObstacle;
 
 public class Flame extends BoxObstacle {
+
+    protected static JsonValue objectConstants;
     private PolygonShape sensorShape;
 
     private Vector2 scale;
@@ -28,7 +30,6 @@ public class Flame extends BoxObstacle {
     public Flame(TextureRegion texture, Vector2 scale, JsonValue data) {
         super(texture.getRegionWidth()/scale.x, texture.getRegionHeight()/scale.y);
 
-        objectData = data;
         this.scale = scale;
 //        setAngle((float) (angle * Math.PI/180));
         setBodyType(BodyDef.BodyType.StaticBody);
@@ -37,7 +38,9 @@ public class Flame extends BoxObstacle {
         setDrawScale(scale);
         setTexture(texture);
         setSensor(true);
-        init();
+
+        setX(data.get("pos").getFloat(0));
+        setY(data.get("pos").getFloat(1));
     }
 
     public boolean activatePhysics(World world) {
@@ -69,10 +72,6 @@ public class Flame extends BoxObstacle {
         canvas.drawPhysics(sensorShape, Color.RED,getX(),getY(),getAngle(),drawScale.x,drawScale.y);
     }
 
-    @Override
-    public void init() {
-        super.init();
-        setX(objectData.get("pos").getFloat(0));
-        setY(objectData.get("pos").getFloat(1));
-    }
+    public static void setConstants(JsonValue constants) { objectConstants = constants; }
+
 }

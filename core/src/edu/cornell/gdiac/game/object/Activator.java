@@ -1,7 +1,6 @@
 package edu.cornell.gdiac.game.object;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.g2d.PolygonRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
@@ -10,6 +9,8 @@ import edu.cornell.gdiac.game.GameCanvas;
 import edu.cornell.gdiac.game.obstacle.*;
 
 public abstract class Activator extends PolygonObstacle {
+
+    protected static JsonValue objectConstants;
 
     /** if the activator is activating objects*/
     protected boolean active;
@@ -41,8 +42,10 @@ public abstract class Activator extends PolygonObstacle {
         setTexture(texture);
         setFixedRotation(true);
 
-        this.objectData = data;
-        init();
+        id = data.getString("id");
+        setX(data.get("pos").getFloat(0)+objectConstants.get("offset").getFloat(0));
+        setY(data.get("pos").getFloat(1)+objectConstants.get("offset").getFloat(1));
+        active = false;
     }
 
     @Override
@@ -82,15 +85,5 @@ public abstract class Activator extends PolygonObstacle {
         canvas.drawPhysics(sensorShape,Color.RED,getX(),getY(),getAngle(),drawScale.x,drawScale.y);
     }
 
-    @Override
-    public void init(){
-        super.init();
-
-        id = objectData.getString("id");
-        setX(objectData.get("pos").getFloat(0)+objectConstants.get("offset").getFloat(0));
-        setY(objectData.get("pos").getFloat(1)+objectConstants.get("offset").getFloat(1));
-        active = false;
-
-    }
-
+    public static void setConstants(JsonValue constants) { objectConstants = constants; }
 }
