@@ -12,6 +12,8 @@ public class PushableBox extends BoxObstacle implements Activatable {
     protected static JsonValue objectConstants;
     private boolean activated;
 
+    private boolean initialActivation;
+
     public static void setConstants(JsonValue constants) { objectConstants = constants; }
 
     public PushableBox(TextureRegion texture, Vector2 scale, JsonValue data){
@@ -30,6 +32,8 @@ public class PushableBox extends BoxObstacle implements Activatable {
         setMass(data.getFloat("mass", 0));
         setX(data.get("pos").getFloat(0)+objectConstants.get("offset").getFloat(0));
         setY(data.get("pos").getFloat(1)+objectConstants.get("offset").getFloat(1));
+
+        initActivations(data);
     }
 
     @Override
@@ -46,5 +50,11 @@ public class PushableBox extends BoxObstacle implements Activatable {
     public void setActivated(boolean activated) {this.activated = activated;}
 
     @Override
-    public boolean isActivated() { return activated; }
+    public boolean getActivated() { return activated; }
+
+    @Override
+    public void setInitialActivation(boolean initialActivation){ this.initialActivation = initialActivation; }
+
+    @Override
+    public boolean getInitialActivation() { return initialActivation; }
 }

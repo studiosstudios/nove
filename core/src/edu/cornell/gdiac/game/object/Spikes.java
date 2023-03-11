@@ -25,6 +25,7 @@ public class Spikes extends BoxObstacle implements Activatable {
 
     private boolean activated;
 
+    private boolean initialActivation;
 
     public Spikes(TextureRegion texture, Vector2 scale, JsonValue data){
         super(texture.getRegionWidth()/scale.x,
@@ -54,6 +55,8 @@ public class Spikes extends BoxObstacle implements Activatable {
         setX(data.get("pos").getFloat(0)+objectConstants.get("offset").getFloat(0));
         setY(data.get("pos").getFloat(1)+objectConstants.get("offset").getFloat(1));
         setAngle((float) (data.getFloat("angle") * Math.PI/180));
+
+        initActivations(data);
     }
 
 
@@ -146,8 +149,15 @@ public class Spikes extends BoxObstacle implements Activatable {
     @Override
     public void setActivated(boolean activated){ this.activated = activated; }
 
-    public static void setConstants(JsonValue constants) { objectConstants = constants; }
+    @Override
+    public boolean getActivated() { return activated; }
 
     @Override
-    public boolean isActivated() { return activated; }
+    public void setInitialActivation(boolean initialActivation){ this.initialActivation = initialActivation; }
+
+    @Override
+    public boolean getInitialActivation() { return initialActivation; }
+
+    public static void setConstants(JsonValue constants) { objectConstants = constants; }
+
 }

@@ -23,6 +23,8 @@ public class Flamethrower extends ComplexObstacle implements Activatable {
 
     private boolean activated;
 
+    private boolean initialActivation;
+
     /**
      * Returns true if the flamethrower if shooting
      *
@@ -62,7 +64,7 @@ public class Flamethrower extends ComplexObstacle implements Activatable {
         flameBase.setX(data.get("pos").getFloat(0));
         flameBase.setY(data.get("pos").getFloat(1) +
                 (flame.getHeight()*objectConstants.getFloat("base_y_offset_scale")));
-
+        initActivations(data);
 //        this.setAngle((float) (angle * Math.PI/180));
     }
 
@@ -122,7 +124,13 @@ public class Flamethrower extends ComplexObstacle implements Activatable {
     public void setActivated(boolean activated){ this.activated = activated; }
 
     @Override
-    public boolean isActivated() { return activated; }
+    public boolean getActivated() { return activated; }
+
+    @Override
+    public void setInitialActivation(boolean initialActivation){ this.initialActivation = initialActivation; }
+
+    @Override
+    public boolean getInitialActivation() { return initialActivation; }
 
     public static void setConstants(JsonValue constants) { objectConstants = constants; }
 }

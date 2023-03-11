@@ -101,7 +101,7 @@ public class LevelController extends WorldController implements ContactListener 
 
     /** object lists - in the future this will be one list maybe */
     private Array<Activator> activators;
-    private Array<ActivatableWrapper> activatables;
+    private Array<Activatable> activatables;
     private Array<DeadBody> deadBodyArray;
 
     /** queue to add joints to the world created in beginContact() */
@@ -109,7 +109,7 @@ public class LevelController extends WorldController implements ContactListener 
 
     /** hashmap to represent activator-spike relationships:
      *   keys are activator ids specified in JSON*/
-    private HashMap<String, Array<ActivatableWrapper>> activationRelations;
+    private HashMap<String, Array<Activatable>> activationRelations;
 
     private int numLives;
     private static final int MAX_NUM_LIVES = 4;
@@ -132,9 +132,9 @@ public class LevelController extends WorldController implements ContactListener 
         setRet(false);
         setFailure(false);
         activators = new Array<Activator>();
-        activatables = new Array<ActivatableWrapper>();
+        activatables = new Array<Activatable>();
         deadBodyArray = new Array<DeadBody>();
-        activationRelations = new HashMap<String, Array<ActivatableWrapper>>();
+        activationRelations = new HashMap<String, Array<Activatable>>();
         world.setContactListener(this);
         sensorFixtures = new ObjectSet<Fixture>();
         this.level = level;
@@ -226,7 +226,7 @@ public class LevelController extends WorldController implements ContactListener 
         dwidth  = goalTile.getRegionWidth()/scale.x;
         dheight = goalTile.getRegionHeight()/scale.y;
 
-        activationRelations = new HashMap<String, Array<ActivatableWrapper>>();
+        activationRelations = new HashMap<String, Array<Activatable>>();
 
         JsonValue goal = levelJV.get("goal");
         JsonValue goalpos = goal.get("pos");
@@ -313,14 +313,14 @@ public class LevelController extends WorldController implements ContactListener 
         Spikes.setConstants(spikesConstants);
         for (JsonValue spikeJV : levelJV.get("spikes")){
             Spikes spike = new Spikes(spikesTexture, scale, spikeJV);
-            loadObject(spike, spikeJV);
+            loadActivatable(spike, spikeJV);
         }
 
         JsonValue boxConstants = constants.get("boxes");
         PushableBox.setConstants(boxConstants);
         for(JsonValue boxJV : levelJV.get("boxes")){
             PushableBox box = new PushableBox(steelTile, scale, boxJV);
-            loadObject(box, boxJV);
+            loadActivatable(box, boxJV);
         }
 
         JsonValue flamethrowerConstants = constants.get("flamethrowers");
@@ -328,7 +328,7 @@ public class LevelController extends WorldController implements ContactListener 
         Flame.setConstants(flamethrowerConstants);
         for (JsonValue flamethrowerJV : levelJV.get("flamethrowers")){
             Flamethrower flamethrower = new Flamethrower(flamethrowerTexture, flameTexture, scale, flamethrowerJV);
-            loadObject(flamethrower, flamethrowerJV);
+            loadActivatable(flamethrower, flamethrowerJV);
         }
 
 
@@ -356,21 +356,20 @@ public class LevelController extends WorldController implements ContactListener 
 
     }
 
-    private void loadObject(Activatable object, JsonValue objectJV){
+    private void loadActivatable(Activatable object, JsonValue objectJV){
 
         addObject((Obstacle) object);
 
         String activatorID = objectJV.getString("activatorID", "");
-        ActivatableWrapper aObject = new ActivatableWrapper(object, objectJV);
         if (!activatorID.equals("")) {
             if (activationRelations.containsKey(activatorID)) {
-                activationRelations.get(activatorID).add(aObject);
+                activationRelations.get(activatorID).add(object);
             } else {
-                activationRelations.put(activatorID, new Array<>(new ActivatableWrapper[]{aObject}));
+                activationRelations.put(activatorID, new Array<>(new Activatable[]{object}));
             }
         }
 
-        activatables.add(aObject);
+        activatables.add(object);
     }
 
     /**
@@ -448,7 +447,7 @@ public class LevelController extends WorldController implements ContactListener 
         for (Activator a : activators){
             a.updateActivated();
             if (activationRelations.containsKey(a.getID())){
-                for (ActivatableWrapper s : activationRelations.get(a.getID())){
+                for (Activatable s : activationRelations.get(a.getID())){
                     s.updateActivated(a.isActive(), world);
                 }
             }
